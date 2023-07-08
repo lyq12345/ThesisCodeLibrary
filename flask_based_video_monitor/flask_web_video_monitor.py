@@ -1,11 +1,3 @@
-# Date: 2020-4-28
-# Created: Daniel G.
-# Mailbox: bibin_zhi@163.com
-
-# Environment: python3 + pycharm
-
-# Web video monitor base on flask.
-
 from motion_detection import MotionDetection
 from imutils.video import VideoStream
 from flask import Response
@@ -30,10 +22,10 @@ app = Flask(__name__)
 
 # initialize the video stream and allow the camera sensor to
 # warmup
-vs = VideoStream(usePiCamera=1).start()
+vs = VideoStream(src=0)
 # vs = VideoStream(src=0)
-camera = vs.camera
-camera.brightness = 60
+#camera = vs.camera
+#camera.brightness = 60
 
 vs.start()
 time.sleep(2.0)
@@ -60,6 +52,8 @@ def detect_motion(frameCount):
         # read the next frame from the video stream, resize it,
         # convert the frame to grayscale, and blur it
         frame = vs.read()
+        if frame is None:
+            continue
         frame = imutils.resize(frame, width=400)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         gray = cv2.GaussianBlur(gray, (7, 7), 0)
