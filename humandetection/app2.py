@@ -6,13 +6,29 @@ import json
 
 app = Flask(__name__)
 
+frame_data = None
+
+def generate_frames():
+    while True:
+        if frame_data is not None:
+            # 将帧数据编码为JPEG格式
+            _, jpeg = cv2.imencode('.jpg', frame_data)
+
+            # 生成MJPEG流格式数据
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
 @app.route("/")
 def index():
     # return the rendered template
     return render_template("index.html")
 
+@app.route('/video_feed')
+def video_feed():
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
 @app.route('/process_video', methods=['POST'])
 def process_video():
+    global frame_data
     # 接收视频帧数据
     video_frame = request.data
 
@@ -24,13 +40,11 @@ def process_video():
     image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
     processed_arr, detections = detect_human_from_img(image)
+    frame_data = processed_arr
     detection_json = json.dumps(detections)
     print(detections)
 
-    _, processed_frame = cv2.imencode('.jpg', processed_arr)
-    video_stream = processed_frame.tobytes()
-
-    return render_template('index.html', processed_frame=video_stream)
+    return "Frame Processed"
 
 
 
