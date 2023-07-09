@@ -1,9 +1,12 @@
 from imageai.Detection.Custom import CustomObjectDetection
 from imageai.Detection import ObjectDetection
+import os
+
+execution_path = os.getcwd()
 
 detector1 = ObjectDetection()
 detector1.setModelTypeAsYOLOv3()
-detector1.setModelPath("models/yolov3.pt")
+detector1.setModelPath(os.path.join(execution_path, "models/yolov3.pt"))
 detector1.loadModel()
 
 def detect_human_from_img(image_arr):

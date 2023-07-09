@@ -8,10 +8,13 @@ app = Flask(__name__)
 # 摄像头索引
 camera_index = 0
 
-# 接收视频流的处理端地址
+# human detection url
 # processing_endpoint = 'http://172.22.135.73:8848/process_video'
-processing_endpoint = 'http://localhost:8848/process_video'
+# processing_endpoint = 'http://localhost:8848/process_video'
 
+#fire detection url
+# processing_endpoint = 'http://172.22.135.73:8849/process_video'
+processing_endpoint = 'http://localhost:8849/process_video'
 @app.route("/")
 def index():
     # return the rendered template
