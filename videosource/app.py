@@ -37,12 +37,13 @@ def generate_frames():
 
         # 在帧上绘制帧率
         fps_text = "FPS: {:.2f}".format(fps)
-        cv2.putText(frame, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         # encode the captured frame
         _, jpeg_frame = cv2.imencode('.jpg', frame)
 
         # send the encoded frame to processors
         response = requests.post(processing_endpoint, data=jpeg_frame.tobytes(), headers={'Content-Type': 'image/jpeg'})
+
+        cv2.putText(frame, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
         # 处理端的响应（可选）
         print(response.text)
