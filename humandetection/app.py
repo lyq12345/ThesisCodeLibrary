@@ -3,15 +3,26 @@ import cv2
 import numpy as np
 from img_process import detect_human_from_img
 import json
+import time
 
 app = Flask(__name__)
 
 frame_data = None
 
 def generate_frames():
+    start_time = time.time()
     while True:
         if frame_data is not None:
             # 将帧数据编码为JPEG格式
+            # 计算帧率
+            current_time = time.time()
+            elapsed_time = current_time - start_time
+            fps = 1 / elapsed_time
+            start_time = current_time
+
+            # 在帧上绘制帧率
+            fps_text = "FPS: {:.2f}".format(fps)
+            cv2.putText(frame_data, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             _, jpeg = cv2.imencode('.jpg', frame_data)
 
             # 生成MJPEG流格式数据
