@@ -4,14 +4,14 @@ import os
 
 execution_path = os.getcwd()
 
-detector1 = ObjectDetection()
-detector1.setModelTypeAsYOLOv3()
-detector1.setModelPath(os.path.join(execution_path, "models/yolov3.pt"))
-detector1.loadModel()
+detector = ObjectDetection()
+detector.setModelTypeAsYOLOv3()
+detector.setModelPath(os.path.join(execution_path, "models/yolov3.pt"))
+detector.loadModel()
 
 def detect_human_from_img(image_arr):
-    custom = detector1.CustomObjects(person=True)
-    output, detections = detector1.detectObjectsFromImage(
+    custom = detector.CustomObjects(person=True)
+    output, detections = detector.detectObjectsFromImage(
                             custom_objects=custom,
                             input_image=image_arr,
                             output_type="array",
