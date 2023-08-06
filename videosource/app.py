@@ -11,11 +11,11 @@ camera_index = 0
 
 # human detection url
 # processing_endpoint = 'http://172.22.135.73:8848/process_video'
-# processing_endpoint = 'http://localhost:8848/process_video'
+processing_endpoint = 'http://localhost:8848/process_video'
 
 #fire detection url
 # processing_endpoint = 'http://172.22.135.73:8849/process_video'
-processing_endpoint = 'http://localhost:8849/process_video'
+#processing_endpoint = 'http://localhost:8849/process_video'
 @app.route("/")
 def index():
     # return the rendered template
@@ -39,15 +39,22 @@ def generate_frames():
         fps_text = "FPS: {:.2f}".format(fps)
         # encode the captured frame
         _, jpeg_frame = cv2.imencode('.jpg', frame)
-
         # send the encoded frame to processors
-        response = requests.post(processing_endpoint, data=jpeg_frame.tobytes(), headers={'Content-Type': 'image/jpeg'})
+        try:
+            response = requests.post(processing_endpoint, data=jpeg_frame.tobytes(), headers={'Content-Type': 'image/jpeg'})
+            response.raise_for_status()
+        except requests.exceptions.Timeout:
+            print(f'Request to {processing_endpoint} timed out.')
+        except requests.exceptions.HTTPError as err:
+            print(f'Request to {processing_endpoint} failed with status code {err}')
+        except requests.exceptions.RequestException as e:
+            print(f'Request to {processing_endpoint} failed')
+            print(e)
 
+        print(fps_text)
+        # put fps tag on unencoded frame
         cv2.putText(frame, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
-        # 处理端的响应（可选）
-        print(response.text)
-
+        _, jpeg_frame = cv2.imencode('.jpg', frame)
         # 生成视频流
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + jpeg_frame.tobytes() + b'\r\n')

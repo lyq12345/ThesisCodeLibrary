@@ -28,7 +28,7 @@ def generate_frames():
         # 在帧上绘制帧率
         fps_text = "FPS: {:.2f}".format(fps)
 
-        # do edge compute
+        # do onboard compute
         processed_frame, detections = detect_fire_from_img(frame)
 
         cv2.putText(processed_frame, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)

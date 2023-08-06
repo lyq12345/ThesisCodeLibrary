@@ -8,6 +8,7 @@ import time
 app = Flask(__name__)
 
 frame_data = None
+camera_index = 0
 
 def generate_frames():
     start_time = time.time()
