@@ -3,8 +3,12 @@ import requests
 import numpy as np
 from flask import Flask, Response, render_template
 import time
+import redis
 
 app = Flask(__name__)
+
+
+redis_conn = redis.Redis(host='127.0.0.1', port= 6379, password= '123456', db= 0, decode_responses=True)
 
 # 摄像头索引
 camera_index = 0
@@ -39,6 +43,11 @@ def generate_frames():
         fps_text = "FPS: {:.2f}".format(fps)
         # encode the captured frame
         _, jpeg_frame = cv2.imencode('.jpg', frame)
+
+        # get successors from redis
+        endpoint_cache = redis_conn.get('host1')
+        processing_endpoint = str(endpoint_cache)
+
         # send the encoded frame to processors
         try:
             response = requests.post(processing_endpoint, data=jpeg_frame.tobytes(), headers={'Content-Type': 'image/jpeg'})
@@ -67,3 +76,4 @@ def video_feed():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
+
