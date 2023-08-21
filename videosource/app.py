@@ -39,8 +39,8 @@ def generate_frames():
         fps = 1 / elapsed_time
         start_time = current_time
 
-        # 在帧上绘制帧率
         fps_text = "FPS: {:.2f}".format(fps)
+        # process_time_text = "Process time: {:.2f} s".format(elapsed_time)
         # encode the captured frame
         _, jpeg_frame = cv2.imencode('.jpg', frame)
 
@@ -60,9 +60,9 @@ def generate_frames():
             print(f'Request to {processing_endpoint} failed')
             print(e)
 
-        print(fps_text)
-        # put fps tag on unencoded frame
+        # put tags on unencoded frame
         cv2.putText(frame, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        # cv2.putText(frame, process_time_text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         _, jpeg_frame = cv2.imencode('.jpg', frame)
         # 生成视频流
         yield (b'--frame\r\n'

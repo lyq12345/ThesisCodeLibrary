@@ -16,15 +16,20 @@ def generate_frames():
         if frame_data is not None:
             # 将帧数据编码为JPEG格式
             # 计算帧率
-            current_time = time.time()
-            elapsed_time = current_time - start_time
-            fps = 1 / elapsed_time
-            start_time = current_time
-
-            # 在帧上绘制帧率
-            fps_text = "FPS: {:.2f}".format(fps)
-            cv2.putText(frame_data, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            # current_time = time.time()
+            # elapsed_time = current_time - start_time
+            # fps = 1 / elapsed_time
+            # process_time_text = "Process time: {:.2f} s".format(elapsed_time)
+            # start_time = current_time
+            #
+            # # 在帧上绘制帧率
+            # fps_text = "FPS: {:.2f}".format(fps)
+            # cv2.putText(frame_data, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            # cv2.putText(frame_data, process_time_text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             _, jpeg = cv2.imencode('.jpg', frame_data)
+
+            # print(fps_text)
+            # print(process_time_text)
 
             # 生成MJPEG流格式数据
             yield (b'--frame\r\n'
@@ -41,8 +46,10 @@ def video_feed():
 @app.route('/process_video', methods=['POST'])
 def process_video():
     global frame_data
+    start_time = time.time()
     # 接收视频帧数据
     video_frame = request.data
+    result = {}
 
     # transfer the byte data to nparr
     nparr = np.frombuffer(video_frame, np.uint8)
@@ -52,10 +59,18 @@ def process_video():
 
     processed_arr, detections = detect_human_from_img(image)
     frame_data = processed_arr
-    detection_json = json.dumps(detections)
-    print(detections)
 
-    return detection_json
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    process_time_text = "Process time: {:.2f} s".format(elapsed_time)
+
+    result['detections'] = detections
+    result['process_time'] = elapsed_time
+    result_json = json.dumps(result)
+
+    print(result_json)
+
+    return result_json
 
 
 
