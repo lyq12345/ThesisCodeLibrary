@@ -1,1 +1,1 @@
-docker build --platform=linux/arm/v7 -t your-image-name .
+docker build --platform=linux/arm64 humandetection:yolov3 .

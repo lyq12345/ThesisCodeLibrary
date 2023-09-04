@@ -8,7 +8,7 @@ import redis
 app = Flask(__name__)
 
 
-redis_conn = redis.Redis(host='127.0.0.1', port= 6379, password= '123456', db= 0, decode_responses=True)
+redis_conn = redis.Redis(host='127.0.0.1', port= 6379, db= 0, decode_responses=True)
 
 # 摄像头索引
 camera_index = 0
@@ -47,6 +47,7 @@ def generate_frames():
         # get successors from redis
         endpoint_cache = redis_conn.get('host1')
         processing_endpoint = str(endpoint_cache)
+        print(processing_endpoint)
 
         # send the encoded frame to processors
         try:
