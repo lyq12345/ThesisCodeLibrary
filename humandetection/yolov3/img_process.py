@@ -6,7 +6,7 @@ execution_path = os.getcwd()
 
 detector = ObjectDetection()
 detector.setModelTypeAsYOLOv3()
-detector.setModelPath(os.path.join(execution_path, "models/yolov3.pt"))
+detector.setModelPath(os.path.join(execution_path, "../models/yolov3.pt"))
 detector.loadModel()
 
 def detect_human_from_img(image_arr):
