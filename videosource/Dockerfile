@@ -1,4 +1,5 @@
-FROM python:3
-ADD my_script.py /
-RUN pip install picamera
-CMD [ "python", "./my_script.py" ]
+FROM benchpilot/raspbian-picamera2:latest
+COPY capture.py .
+COPY capture_config.yml .
+RUN pip install pyyaml
+CMD [ "python3", "capture.py" ]
