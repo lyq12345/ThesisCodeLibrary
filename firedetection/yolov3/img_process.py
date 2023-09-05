@@ -3,19 +3,12 @@ import os
 
 execution_path = os.getcwd()
 
+# YOLOv3
 detector = CustomObjectDetection()
-# YOLO
 detector.setModelTypeAsYOLOv3()
-detector.setModelPath(model_path=os.path.join(execution_path, 'models/yolov3_fire-dataset_last.pt'))
+detector.setModelPath(model_path=os.path.join(execution_path, '../models/yolov3_fire-dataset_last.pt'))
 detector.setJsonPath(configuration_json=os.path.join(execution_path,
-                                                     "../tinyyolo/models/fire-dataset_yolov3_detection_config.json"))
-
-# TinyYOLO
-# detector.setModelTypeAsTinyYOLOv3()
-# detector.setModelPath(model_path=os.path.join('models/tinyyolo-yolov3_fire-dataset_mAP-0.35102_epoch-71.pt')
-# detector.setJsonPath(configuration_json="models/fire-dataset_tiny-yolov3_detection_config.json")
-
-
+                                                    "../models/fire-dataset_yolov3_detection_config.json"))
 detector.loadModel()
 
 def detect_fire_from_img(image_arr):

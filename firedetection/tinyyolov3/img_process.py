@@ -3,18 +3,11 @@ import os
 
 execution_path = os.getcwd()
 
-detector = CustomObjectDetection()
-# YOLO
-# detector.setModelTypeAsYOLOv3()
-# detector.setModelPath(model_path=os.path.join(execution_path, 'models/yolov3_fire-dataset_last.pt'))
-# detector.setJsonPath(configuration_json=os.path.join(execution_path,
-#                                                      "../tinyyolo/models/fire-dataset_yolov3_detection_config.json"))
-
 # TinyYOLO
-print(os.path.join(execution_path, 'models/tiny-yolov3_fire-dataset_last.pt'))
+detector = CustomObjectDetection()
 detector.setModelTypeAsTinyYOLOv3()
-detector.setModelPath(model_path=os.path.join(execution_path, 'models/tiny-yolov3_fire-dataset_last.pt'))
-detector.setJsonPath(configuration_json=os.path.join(execution_path, "models/fire-dataset_tiny-yolov3_detection_config.json"))
+detector.setModelPath(model_path=os.path.join(execution_path, '../models/tiny-yolov3_fire-dataset_last.pt'))
+detector.setJsonPath(configuration_json=os.path.join(execution_path, "../models/fire-dataset_tiny-yolov3_detection_config.json"))
 
 
 detector.loadModel()

@@ -2,6 +2,7 @@ from picamera2 import Picamera2
 import yaml
 import time
 import os
+import cv2
 import subprocess
 
 cur_path = os.path.dirname(os.path.realpath(__file__))
