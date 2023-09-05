@@ -2,6 +2,7 @@ from picamera2 import Picamera2
 import yaml
 import time
 import os
+import subprocess
 
 cur_path = os.path.dirname(os.path.realpath(__file__))
 config_path = os.path.join(cur_path, "capture_config.yml")
@@ -30,6 +31,9 @@ try:
 
         # capture one image
         picam2.capture_file(raw_path)
+
+        # compress the raw image
+        result = subprocess.run(["convert", "-resize", "1024x", "-strip", "-quality", "65%", raw_path, compressed_path], stdout=subprocess.PIPE, text=True)
         print("image captured!")
 
 except KeyboardInterrupt:
