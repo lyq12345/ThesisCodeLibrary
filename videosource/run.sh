@@ -1,5 +1,1 @@
-docker run -d -v /run/udev:/run/udev --privileged \
-  -v /usr/bin/convert:/usr/bin/convert \
-  -v /var/tmp:/var/tmp
-  --device=/dev/vchiq:/dev/vchiq \
-  benchpilot/raspbian-picamera2:latest
+sudo docker run -v /run/udev:/run/udev --privileged --device=/dev/vchiq:/dev/vchiq -v /var/tmp:/usr/src joelee0515/videosource:picamera2

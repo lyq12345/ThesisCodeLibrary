@@ -16,8 +16,8 @@ picam2 = Picamera2()
 camera_config = picam2.create_preview_configuration()
 picam2.configure(camera_config)
 
-raw_path = '/var/tmp/raw.jpg'
-compressed_path = '/var/tmp/compressed.jpg'
+raw_path = '/usr/src/raw.jpg'
+compressed_path = '/usr/src/compressed.jpg'
 
 try:
     # set capture interval
