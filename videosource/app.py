@@ -8,13 +8,13 @@ import redis
 app = Flask(__name__)
 
 
-redis_conn = redis.Redis(host='127.0.0.1', port= 6379, password= '123456', db= 0, decode_responses=True)
+redis_conn = redis.Redis(host='127.0.0.1', port=6379, password='123456', db=0, decode_responses=True)
 
-# 摄像头索引
+# camera index
 camera_index = 0
 
 # human detection url
-processing_endpoint = 'http://node6:8848/process_video'
+# processing_endpoint = 'http://node6:8848/process_video'
 # processing_endpoint = 'http://localhost:8848/process_video'
 
 #fire detection url
@@ -64,7 +64,7 @@ def generate_frames():
         cv2.putText(frame, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         # cv2.putText(frame, process_time_text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         _, jpeg_frame = cv2.imencode('.jpg', frame)
-        # 生成视频流
+        # generate the video stream
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + jpeg_frame.tobytes() + b'\r\n')
 

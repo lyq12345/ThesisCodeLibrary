@@ -13,7 +13,7 @@ config_dict = yaml.load(cfg, Loader=yaml.FullLoader)
 
 # camera setup and preview
 picam2 = Picamera2()
-camera_config = picam2.create_preview_configuration()
+camera_config = picam2.create_preview_configuration(main={"size": (4656, 3496)}, buffer_count=1)
 picam2.configure(camera_config)
 
 raw_path = '/usr/src/raw.jpg'
