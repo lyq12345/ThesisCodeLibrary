@@ -1,0 +1,5 @@
+interval: 5
+resolution:
+  height: 640
+  width: 480
+publish: http://127.0.0.1:test
