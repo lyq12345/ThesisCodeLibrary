@@ -1,6 +1,6 @@
 import cv2
 import requests
-import picamera2
+from picamera2 import Picamera2
 from flask import Flask, Response, render_template
 import time
 # import redis
