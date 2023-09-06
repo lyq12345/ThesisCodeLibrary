@@ -15,10 +15,10 @@ camera_index = 0
 
 # human detection url
 # processing_endpoint = 'http://node6:8848/process_video'
-processing_endpoint = 'http://localhost:8848/process_video'
+# processing_endpoint = 'http://localhost:8848/process_video'
 
 #fire detection url
-# processing_endpoint = 'http://172.22.135.73:8849/process_video'
+processing_endpoint = 'http://node6:8849/process_video'
 #processing_endpoint = 'http://localhost:8849/process_video'
 
 def resize_img(img, new_width):
