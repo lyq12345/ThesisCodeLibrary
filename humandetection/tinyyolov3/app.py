@@ -10,6 +10,10 @@ app = Flask(__name__)
 frame_data = None
 camera_index = 0
 
+@app.before_request
+def camera_startup():
+    print("Starting camera")
+
 def generate_frames():
     start_time = time.time()
     while True:
