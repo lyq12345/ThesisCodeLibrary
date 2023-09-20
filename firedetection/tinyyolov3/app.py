@@ -31,8 +31,10 @@ def video_feed():
 @app.route('/process_video', methods=['POST'])
 def process_video():
     global frame_data
+    start_time = time.time()
     # 接收视频帧数据
     video_frame = request.data
+    result = {}
 
     # transfer the byte data to nparr
     nparr = np.frombuffer(video_frame, np.uint8)
@@ -42,10 +44,20 @@ def process_video():
 
     processed_arr, detections = detect_fire_from_img(image)
     frame_data = processed_arr
-    detection_json = json.dumps(detections)
-    print(detections)
 
-    return detection_json
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    process_time_text = "Process time: {:.2f} s".format(elapsed_time)
+
+    print(process_time_text)
+
+    result['detections'] = detections
+    result['process_time'] = elapsed_time
+    result_json = json.dumps(result)
+
+    print(result_json)
+
+    return result_json
 
 
 

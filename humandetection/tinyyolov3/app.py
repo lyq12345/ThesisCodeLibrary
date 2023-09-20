@@ -15,7 +15,6 @@ def camera_startup():
     print("Starting camera")
 
 def generate_frames():
-    start_time = time.time()
     while True:
         if frame_data is not None:
             # 将帧数据编码为JPEG格式
@@ -67,6 +66,8 @@ def process_video():
     end_time = time.time()
     elapsed_time = end_time - start_time
     process_time_text = "Process time: {:.2f} s".format(elapsed_time)
+
+    print(process_time_text)
 
     result['detections'] = detections
     result['process_time'] = elapsed_time

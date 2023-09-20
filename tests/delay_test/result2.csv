@@ -1,0 +1,5 @@
+,Pi4B,Jetson Nano,Jetson Xaiver
+human-tinyyolov3,1.0913,0.5864,0.4605
+human-yolov3,7.2191,4.4829,3.8648
+fire-tinyyolov3,1.0702,0.5549,0.4276
+fire-yolov3,7.0823,4.364,2.6235

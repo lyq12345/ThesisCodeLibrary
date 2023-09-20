@@ -64,6 +64,8 @@ def process_video():
     elapsed_time = end_time - start_time
     process_time_text = "Process time: {:.2f} s".format(elapsed_time)
 
+    print(process_time_text)
+
     result['detections'] = detections
     result['process_time'] = elapsed_time
     result_json = json.dumps(result)
