@@ -23,10 +23,10 @@ def draw_hist():
         version_name = versions[i]
         for j in range(3):
             device_name = devices[j]
-            file_name = f"results/raw_{device_name}_human_{version_name}.csv"
+            file_name = f"results/raw_{device_name}_fire_{version_name}.csv"
             df = pd.read_csv(file_name)
             data = df['proc_time'].to_list()
-            axes[i, j].hist(data[i * 3 + j], bins=10, edgecolor='k')
+            axes[i, j].hist(data, bins=10, edgecolor='k', color='orange')
             axes[i, j].set_title(f'{version_name} on {device_name}')
     plt.show()
 
