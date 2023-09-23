@@ -5,7 +5,7 @@
     "constraints": {
       "cpu": 2,
       "storage": 763,
-      "memory": 1000
+      "memory": 408
     }
   },
   {
@@ -14,7 +14,7 @@
     "constraints": {
       "cpu": 2,
       "storage": 951,
-      "memory": 1000
+      "memory": 674
     }
   },
   {
@@ -23,7 +23,7 @@
     "constraints": {
       "cpu": 2,
       "storage": 764,
-      "memory": 1000
+      "memory": 480
     }
   },
   {
@@ -32,7 +32,7 @@
     "constraints": {
       "cpu": 2,
       "storage": 952,
-      "memory": 1000
+      "memory": 654
     }
   }
 ]
