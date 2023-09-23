@@ -1,0 +1,38 @@
+[
+  {
+    "object": "fire",
+    "version": "tinyyolov3",
+    "constraints": {
+      "cpu": 2,
+      "storage": 763,
+      "memory": 1000
+    }
+  },
+  {
+    "object": "fire",
+    "version": "yolov3",
+    "constraints": {
+      "cpu": 2,
+      "storage": 951,
+      "memory": 1000
+    }
+  },
+  {
+    "object": "human",
+    "version": "tinyyolov3",
+    "constraints": {
+      "cpu": 2,
+      "storage": 764,
+      "memory": 1000
+    }
+  },
+  {
+    "object": "human",
+    "version": "yolov3",
+    "constraints": {
+      "cpu": 2,
+      "storage": 952,
+      "memory": 1000
+    }
+  }
+]
