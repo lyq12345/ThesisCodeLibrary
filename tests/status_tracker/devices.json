@@ -1,0 +1,86 @@
+[
+  {
+    "hostname": "node1",
+    "ip": "172.22.152.175",
+    "arch": "arm64",
+    "os": "Raspbian GNU/Linux 10 (buster)",
+    "resources": {
+      "cpu": 4,
+      "gpu": 0,
+      "memory": 4096,
+      "storage": 131072
+    },
+    "sensor": null,
+    "power": "unlimited"
+  },
+  {
+    "hostname": "node2",
+    "ip": "172.22.152.175",
+    "arch": "arm64",
+    "os": "Raspbian GNU/Linux 10 (buster)",
+    "resources": {
+      "cpu": 4,
+      "gpu": 0,
+      "memory": 4096,
+      "storage": 131072
+    },
+    "sensor": "IMX519",
+    "power": "unlimited"
+  },
+  {
+    "hostname": "node3",
+    "ip": "172.22.152.175",
+    "arch": "arm64",
+    "os": "ubuntu 18.04",
+    "resources": {
+      "cpu": 4,
+      "gpu": 1,
+      "memory": 32768,
+      "storage": 65600
+    },
+    "sensor": null,
+    "power": "1820mAh"
+  },
+  {
+    "hostname": "node4",
+    "ip": "172.22.152.175",
+    "arch": "arm64",
+    "os": "Raspbian GNU/Linux 10 (buster)",
+    "resources": {
+      "cpu": 4,
+      "gpu": 0,
+      "memory": 4096,
+      "storage": 131072
+    },
+    "sensor": null,
+    "power": "unlimited"
+  },
+  {
+    "hostname": "node5",
+    "ip": "172.22.152.175",
+    "arch": "arm64",
+    "os": "ubuntu 18.04",
+    "resources": {
+      "cpu": 4,
+      "gpu": 1,
+      "memory": 4096,
+      "storage": 65600
+    },
+    "sensor": "IMX519",
+    "power": "unlimited"
+  },
+  {
+    "hostname": "master",
+    "ip": "172.22.152.175",
+    "arch": "arm64",
+    "os": "Raspbian GNU/Linux 10 (buster)",
+    "resources": {
+      "cpu": 4,
+      "gpu": 0,
+      "memory": 4096,
+      "storage": 131072
+    },
+    "sensor": null,
+    "power": "unlimited"
+  }
+]

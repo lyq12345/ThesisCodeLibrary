@@ -1,7 +1,11 @@
 [
   {
+    "type": "processing",
     "object": "fire",
     "version": "tinyyolov3",
+    "accuracy": 0.5,
+    "speed": 0,
+    "power_consumption": 0,
     "constraints": {
       "cpu": 2,
       "gpu": 0,
@@ -10,8 +14,12 @@
     }
   },
   {
+    "type": "processing",
     "object": "fire",
     "version": "yolov3",
+        "accuracy": 0.7,
+    "speed": 0,
+    "power_consumption": 0,
     "constraints": {
       "cpu": 2,
       "gpu": 0,
@@ -20,8 +28,12 @@
     }
   },
   {
+    "type": "processing",
     "object": "human",
     "version": "tinyyolov3",
+        "accuracy": 0.5,
+    "speed": 0,
+    "power_consumption": 0,
     "constraints": {
       "cpu": 2,
       "gpu": 0,
@@ -30,8 +42,24 @@
     }
   },
   {
+    "type": "processing",
     "object": "human",
     "version": "yolov3",
+        "accuracy": 0.7,
+    "speed": 0,
+    "power_consumption": 0,
+    "constraints": {
+      "cpu": 2,
+      "gpu": 0,
+      "storage": 952,
+      "memory": 654
+    }
+  },
+  {
+    "type": "source",
+    "sensor": "camera",
+    "version": "IMX519",
+    "speed": 0,
     "constraints": {
       "cpu": 2,
       "gpu": 0,
