@@ -24,7 +24,10 @@
       "memory": 4096,
       "storage": 131072
     },
-    "sensor": "IMX519",
+    "sensor": {
+      "id": "1",
+      "model": "IMX519"
+    },
     "power": "unlimited"
   },
   {
@@ -52,7 +55,10 @@
       "memory": 4096,
       "storage": 131072
     },
-    "sensor": null,
+    "sensor": {
+      "id": "2",
+      "model": "IMX519"
+    },
     "power": "unlimited"
   },
   {
@@ -66,7 +72,7 @@
       "memory": 4096,
       "storage": 65600
     },
-    "sensor": "IMX519",
+    "sensor": null,
     "power": "unlimited"
   },
   {

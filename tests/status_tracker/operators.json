@@ -57,8 +57,7 @@
   },
   {
     "type": "source",
-    "sensor": "camera",
-    "version": "IMX519",
+    "sensor": "IMX519",
     "speed": 0,
     "constraints": {
       "cpu": 2,
