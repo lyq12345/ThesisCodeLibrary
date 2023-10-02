@@ -1,69 +1,94 @@
 [
   {
+    "name": "joelee0515/firedetection:tinyyolov3-measure-time",
     "type": "processing",
     "object": "fire",
     "version": "tinyyolov3",
     "accuracy": 0.5,
-    "speed": 0,
+    "speed": 2,
     "power_consumption": 0,
-    "constraints": {
-      "cpu": 2,
-      "gpu": 0,
-      "storage": 763,
-      "memory": 408
+    "requirements": {
+      "system": {
+        "cpu": 2,
+        "gpu": 0,
+        "storage": 763,
+        "memory": 408
+      },
+      "hardware": null
+
     }
   },
   {
+    "name": "joelee0515/firedetection:yolov3-measure-time",
     "type": "processing",
     "object": "fire",
     "version": "yolov3",
-        "accuracy": 0.7,
-    "speed": 0,
+    "accuracy": 0.7,
+    "speed": 1,
     "power_consumption": 0,
-    "constraints": {
-      "cpu": 2,
-      "gpu": 0,
-      "storage": 951,
-      "memory": 674
+    "requirements": {
+      "system": {
+        "cpu": 2,
+        "gpu": 0,
+        "storage": 951,
+        "memory": 674
+      },
+      "hardware": null
+
     }
   },
   {
+    "name": "joelee0515/humandetection:tinyyolov3-measure-time",
     "type": "processing",
     "object": "human",
     "version": "tinyyolov3",
-        "accuracy": 0.5,
-    "speed": 0,
+    "accuracy": 0.5,
+    "speed": 2,
     "power_consumption": 0,
-    "constraints": {
-      "cpu": 2,
-      "gpu": 0,
-      "storage": 764,
-      "memory": 480
+    "requirements": {
+      "system": {
+        "cpu": 2,
+        "gpu": 0,
+        "storage": 764,
+        "memory": 480
+      },
+      "hardware": null
+
     }
   },
   {
+    "name": "joelee0515/humandetection:yolov3-measure-time",
     "type": "processing",
     "object": "human",
     "version": "yolov3",
-        "accuracy": 0.7,
-    "speed": 0,
+    "accuracy": 0.7,
+    "speed": 1,
     "power_consumption": 0,
-    "constraints": {
-      "cpu": 2,
-      "gpu": 0,
-      "storage": 952,
-      "memory": 654
+    "requirements": {
+      "system": {
+        "cpu": 2,
+        "gpu": 0,
+        "storage": 952,
+        "memory": 654
+      },
+      "hardware": null
     }
   },
   {
+    "name": "joelee0515/videosource:picamera2-and-redis",
     "type": "source",
     "sensor": "IMX519",
     "speed": 0,
-    "constraints": {
-      "cpu": 2,
-      "gpu": 0,
-      "storage": 952,
-      "memory": 654
+    "requirements": {
+      "system": {
+        "cpu": 2,
+        "gpu": 0,
+        "storage": 952,
+        "memory": 654
+      },
+      "hardware": [{
+        "sensor": "IMX519"
+      }]
     }
   }
 ]
