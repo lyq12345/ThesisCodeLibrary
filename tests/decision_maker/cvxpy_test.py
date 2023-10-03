@@ -25,8 +25,8 @@ y = cp.Variable((num_devices, num_operators), boolean=True) # device(data source
 
 # Define the objective function (minimize cost)
 cost = cp.sum(cp.multiply(deployment_cost, x))
-delay = cp.sum(cp.multiply(transmission_rate, y@x)) + cp.sum(cp.multiply(processing_speed, x))
-accuracy = cp.sum(operator_accuracy@x)
+delay = cp.sum(y.T@cp.multiply(y@x, transmission_rate), axis=1) + cp.sum(cp.multiply(x, processing_speed), axis=1)
+accuracy = cp.multiply(cp.sum(x, axis=1), operator_accuracy.T)
 objective = cp.Minimize(cost)
 
 # Define constraints (server capacity and app requirements)
