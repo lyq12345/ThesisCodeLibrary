@@ -7,8 +7,8 @@ if [ ! -d "$DIRECTORY" ]; then
     mkdir "$DIRECTORY"
 fi
 
-# 进入 "models" 目录
+#  go to "models" dir
 cd "$DIRECTORY"
 
-# 下载文件
+# download retrained model
 wget -P . https://github.com/lyq12345/ThesisCodeLibrary/releases/download/v1.0/yolov3.pt

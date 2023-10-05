@@ -1,89 +1,63 @@
 from ortools.linear_solver import pywraplp
 
-# Dimensions
-I = 4
-J = 5
-K = 3
 
-# Create the MIP solver
-solver = pywraplp.Solver.CreateSolver('SCIP')
+def main():
+    # Data
+    costs = [
+        [90.2, 80.7, 75.2, 70.2],
+        [35.2, 85.2, 55.2, 65.2],
+        [125.2, 95.2, 90.2, 95.2],
+        [45.2, 110.2, 95.2, 115.2],
+        [50.2, 100.2, 90.2, 100.2],
+    ]
+    num_workers = len(costs)
+    num_tasks = len(costs[0])
 
-# Create binary decision variables x_ij for the binary matrix x
-x = {}
-for i in range(I):
-    for j in range(J):
-        x[i, j] = solver.IntVar(0, 1, f'x_{i}_{j}')
+    # Solver
+    # Create the mip solver with the SCIP backend.
+    solver = pywraplp.Solver.CreateSolver("SCIP")
 
-# Create binary decision variables y_jk for the binary vector y
-y = {}
-for j in range(J):
-    for k in range(K):
-        y[j, k] = solver.IntVar(0, 1, f'y_{j}_{k}')
+    if not solver:
+        return
 
-# Create binary decision variable z to model max(0, sum(x_ij * y_jk))
-z = solver.IntVar(0, 100000, 'z')
+    # Variables
+    # x[i, j] is an array of 0-1 variables, which will be 1
+    # if worker i is assigned to task j.
+    x = {}
+    for i in range(num_workers):
+        for j in range(num_tasks):
+            x[i, j] = solver.IntVar(0, 1, "")
 
-# Additional binary decision variables to model x_ij * y_jk
-xy = {}
-for i in range(I):
-    for j in range(J):
-        for k in range(K):
-            xy[i, j, k] = solver.IntVar(0, 1, f'xy_{i}_{j}_{k}')
+    # Constraints
+    # Each worker is assigned to at most 1 task.
+    for i in range(num_workers):
+        solver.Add(solver.Sum([x[i, j] for j in range(num_tasks)]) <= 1)
 
-# Add constraints to represent x_ij * y_jk as binary variables
-for i in range(I):
-    for j in range(J):
-        for k in range(K):
-            solver.Add(xy[i, j, k] <= x[i, j])
-            solver.Add(xy[i, j, k] <= y[j, k])
-            solver.Add(xy[i, j, k] >= x[i, j] + y[j, k] - 1)
+    # Each task is assigned to exactly one worker.
+    for j in range(num_tasks):
+        solver.Add(solver.Sum([x[i, j] for i in range(num_workers)]) == 1)
 
-# Add constraint to ensure z is 1 if and only if max(0, sum(x_ij * y_jk)) > 0
-# solver.Add(z <= max( 200, sum(2*xy[i, j, k] for i in range(I) for j in range(J) for k in range(K))))
+    # Objective
+    objective_terms = []
+    for i in range(num_workers):
+        for j in range(num_tasks):
+            objective_terms.append(costs[i][j] * x[i, j])
+    solver.Minimize(solver.Sum(objective_terms))
 
-# Binary decision variable w to handle the max(100, ...)
-w = solver.IntVar(0, 1, 'w')
-# Add constraint to ensure z is 1 if and only if max(100, sum(x_ij * y_jk)) > 0
-M = 100  # A large constant
-for i in range(I):
-    for j in range(J):
-        for k in range(K):
-            solver.Add(z >= M * w - M + sum(xy[i, j, k] for i in range(I) for j in range(J) for k in range(K)))
-            solver.Add(z <= sum(xy[i, j, k] for i in range(I) for j in range(J) for k in range(K)))
+    # Solve
+    status = solver.Solve()
 
-# Add constraint sum_j x_ij <= 1 for each i
-for i in range(I):
-    solver.Add(sum(x[i, j] for j in range(J)) <= 1)
+    # Print solution.
+    if status == pywraplp.Solver.OPTIMAL or status == pywraplp.Solver.FEASIBLE:
+        print(f"Total cost = {solver.Objective().Value()}\n")
+        for i in range(num_workers):
+            for j in range(num_tasks):
+                # Test if x[i,j] is 1 (with tolerance for floating point arithmetic).
+                if x[i, j].solution_value() > 0.5:
+                    print(f"Worker {i} assigned to task {j}." + f" Cost: {costs[i][j]}")
+    else:
+        print("No solution found.")
 
-# Maximize z
-solver.Maximize(z)
 
-# Solve the problem
-status = solver.Solve()
-# Print the objective function
-print("Objective Function:")
-print("Maximize z")  # Changed from "Maximize z"
-# Print the constraints
-print("z <= max(100,sum(xy[i, j, k]) for all i, j, k)")
-print("\nConstraints:")
-for i in range(I):
-    print(f"sum_j x_{i}_j <= 1")
-
-# Check the solver's result status
-if status == pywraplp.Solver.OPTIMAL:
-    print("Optimal Solution Found:")
-    print("z =", z.solution_value())
-
-    # Print the values of x_ij
-    print("Values of x_ij:")
-    for i in range(I):
-        for j in range(J):
-            print(f"x_{i}_{j} =", x[i, j].solution_value())
-
-    # Print the values of y_jk
-    print("Values of y_jk:")
-    for j in range(J):
-        for k in range(K):
-            print(f"y_{j}_{k} =", y[j, k].solution_value())
-else:
-    print("No optimal solution found.")
+if __name__ == "__main__":
+    main()

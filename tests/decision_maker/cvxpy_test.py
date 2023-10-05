@@ -7,11 +7,16 @@ num_operators = 3
 server_capacity = np.array([10, 8, 6, 6, 6, 6]) # xaiver, nano, pi, pi, pi, pi
 operator_requirements = np.array([3, 5, 4]) # humantinyv3, humanyolov3, firetinyv3, fireyolov3
 operator_accuracy = np.array([0.45, 0.68, 0.45])
-processing_speed = np.array([[0.46, 0.58, 1.09, 1.09, 1.09, 1.09],
-                           [3.86, 4.48, 7.21, 7.21, 7.21, 7.21],
-                           [0.42, 0.55, 1.07, 1.07, 1.07, 1.07]])
+processing_speed = np.array([[0, 9.08, 6.43, 1.09, 1.09, 1.09],
+                           [3.86, 0, 7.21, 7.21, 7.21, 7.21],
+                           [0.42, 0.55, 0, 1.07, 1.07, 1.07],
+                            [0.42, 0.55, 1.07, 0, 1.07, 1.07],
+                            [0.42, 0.55, 1.07, 1.07, 0, 1.07],
+                            [0.42, 0.55, 1.07, 1.07, 1.07, 0],
+                             ])
 
 transmission_rate = np.random.uniform(5, 20, size=(6, 6))
+print(transmission_rate)
 
 # Define decision variables (binary variables)
 X = cp.Variable((num_operators, num_devices), boolean=True) # operator - device
@@ -40,6 +45,8 @@ problem = cp.Problem(objective, constraints)
 
 # Solve the problem
 problem.solve()
+
+
 
 # Print the results
 if problem.status == cp.OPTIMAL:

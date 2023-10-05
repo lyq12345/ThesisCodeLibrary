@@ -14,15 +14,15 @@ def generate_frames():
     start_time = time.time()
     while True:
         if frame_data is not None:
-            # 将帧数据编码为JPEG格式
-            # 计算帧率
+            ## encode into jpeg format
+            ## compute fps
             # current_time = time.time()
             # elapsed_time = current_time - start_time
             # fps = 1 / elapsed_time
             # process_time_text = "Process time: {:.2f} s".format(elapsed_time)
             # start_time = current_time
             #
-            # # 在帧上绘制帧率
+            # # draw fps text
             # fps_text = "FPS: {:.2f}".format(fps)
             # cv2.putText(frame_data, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             # cv2.putText(frame_data, process_time_text, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
@@ -31,7 +31,7 @@ def generate_frames():
             # print(fps_text)
             # print(process_time_text)
 
-            # 生成MJPEG流格式数据
+            # generate jpeg bytestream
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
 @app.route("/")
@@ -47,7 +47,7 @@ def video_feed():
 def process_video():
     global frame_data
     start_time = time.time()
-    # 接收视频帧数据
+    # receive frame data from HTTP
     video_frame = request.data
     result = {}
 
