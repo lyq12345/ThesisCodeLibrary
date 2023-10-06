@@ -2,6 +2,7 @@
   {
     "id": 1,
     "hostname": "node1",
+    "model": "raspberrypi-4b",
     "ip": "172.22.152.175",
     "arch": "arm64",
     "os": "Raspbian GNU/Linux 10 (buster)",
@@ -19,6 +20,7 @@
   {
     "id": 2,
     "hostname": "node2",
+    "model": "raspberrypi-4b",
     "ip": "172.22.152.175",
     "arch": "arm64",
     "os": "Raspbian GNU/Linux 10 (buster)",
@@ -42,6 +44,7 @@
   {
     "id": 3,
     "hostname": "node3",
+    "model": "jetson-xavier",
     "ip": "172.22.152.175",
     "arch": "arm64",
     "os": "ubuntu 18.04",
@@ -55,11 +58,12 @@
       "hardware": null
 
     },
-    "power": "1820mAh"
+    "power": "unlimited"
   },
   {
     "id": 4,
     "hostname": "node4",
+    "model": "raspberrypi-4b",
     "ip": "172.22.152.175",
     "arch": "arm64",
     "os": "Raspbian GNU/Linux 10 (buster)",
@@ -78,11 +82,12 @@
       ]
 
     },
-    "power": "unlimited"
+    "power": "1820"
   },
   {
     "id": 5,
     "hostname": "node5",
+    "model": "jetson-nano",
     "ip": "172.22.152.175",
     "arch": "arm64",
     "os": "ubuntu 18.04",
@@ -101,6 +106,7 @@
   {
     "id": 6,
     "hostname": "master",
+    "model": "raspberrypi-4b",
     "ip": "172.22.152.175",
     "arch": "arm64",
     "os": "Raspbian GNU/Linux 10 (buster)",
@@ -119,6 +125,7 @@
   {
     "id": 7,
     "hostname": "mock1",
+    "model": "raspberrypi-4b",
     "ip": "172.22.152.175",
     "arch": "arm64",
     "os": "Raspbian GNU/Linux 10 (buster)",
@@ -142,6 +149,7 @@
   {
     "id": 8,
     "hostname": "mock1",
+    "model": "raspberrypi-4b",
     "ip": "172.22.152.175",
     "arch": "arm64",
     "os": "Raspbian GNU/Linux 10 (buster)",
@@ -165,6 +173,7 @@
   {
     "id": 9,
     "hostname": "mock2",
+    "model": "raspberrypi-4b",
     "ip": "172.22.152.175",
     "arch": "arm64",
     "os": "Raspbian GNU/Linux 10 (buster)",
@@ -188,6 +197,7 @@
   {
     "id": 10,
     "hostname": "mock3",
+    "model": "raspberrypi-4b",
     "ip": "172.22.152.175",
     "arch": "arm64",
     "os": "Raspbian GNU/Linux 10 (buster)",

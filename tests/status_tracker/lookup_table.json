@@ -1,0 +1,23 @@
+{
+  "joelee0515/firedetection:yolov3-measure-time": {
+    "jetson-nano": 4.364,
+    "raspberrypi-4b": 7.0823,
+    "jetson-xavier": 2.6235
+
+  },
+  "joelee0515/firedetection:tinyyolov3-measure-time": {
+    "jetson-nano": 0.5549,
+    "raspberrypi-4b": 1.0702,
+    "jetson-xavier": 0.4276
+  },
+  "joelee0515/humandetection:yolov3-measure-time": {
+    "jetson-nano": 4.4829,
+    "raspberrypi-4b": 7.2191,
+    "jetson-xavier": 3.8648
+  },
+  "joelee0515/humandetection:tinyyolov3-measure-time": {
+    "jetson-nano": 0.5864,
+    "raspberrypi-4b": 1.0913,
+    "jetson-xavier": 0.4605
+  }
+}

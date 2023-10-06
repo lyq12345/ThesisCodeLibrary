@@ -3,9 +3,9 @@ from typing import List, Dict
 import os
 import numpy as np
 from greedy_deploy import Greedy_Decider
+from MIP_deploy import MIP_Decider
 
 cur_dir = os.getcwd()
-
 X = np.zeros((1000, 1000)) # operator - device
 Y = np.zeros((1000, 1000)) # task - processing operator
 def read_json(filename):
@@ -61,6 +61,15 @@ def make_decison_from_tasks(task_list):
 
     solution = decision_maker.match_operators_with_devices(operator_pairs, device_list)
 
+def make_decision_from_task_new(tasks):
+    device_file = os.path.join(cur_dir, "../status_tracker/devices.json")
+    operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
+
+    device_list = read_json(device_file)
+    operator_list = read_json(operator_file)
+
+    decision_maker = MIP_Decider(tasks, device_list, operator_list)
+
 tasks = [
     {
         "id": 0,
@@ -91,6 +100,6 @@ tasks = [
         "priority": 1
     },
 ]
-make_decison_from_tasks(tasks)
-
+# make_decison_from_tasks(tasks)
+make_decision_from_task_new(tasks)
 
