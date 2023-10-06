@@ -69,36 +69,37 @@ def make_decision_from_task_new(tasks):
     operator_list = read_json(operator_file)
 
     decision_maker = MIP_Decider(tasks, device_list, operator_list)
+    decision_maker.make_decision()
 
 tasks = [
     {
         "id": 0,
-        "source": "1",
+        "source": 1,
         "object": "human",
         "delay": 10,
         "priority": 10
     },
     {
         "id": 1,
-        "source": "2",
+        "source": 2,
         "object": "fire",
         "delay": 10,
         "priority": 5
     },
     {
         "id": 2,
-        "source": "2",
+        "source": 3,
         "object": "fire",
         "delay": 10,
         "priority": 2
     },
     {
         "id": 3,
-        "source": "2",
+        "source": 4,
         "object": "fire",
         "delay": 10,
         "priority": 1
-    },
+    }
 ]
 # make_decison_from_tasks(tasks)
 make_decision_from_task_new(tasks)

@@ -2,6 +2,8 @@ import cvxpy as cp
 import numpy as np
 import json
 import os
+from ortools.linear_solver import pywraplp
+
 
 speed_lookup_table = {
   "joelee0515/firedetection:yolov3-measure-time": {
@@ -29,53 +31,75 @@ speed_lookup_table = {
 
 class MIP_Decider:
     def __init__(self, tasks, devices, operators):
+        self.num_tasks = len(tasks)
+        self.num_devices = None
         self.tasks = tasks
-        self.device_data = self.create_device_model(devices)
+        self.device_data = self.create_device_model(tasks, devices)
         self.operator_data = self.create_operator_model(tasks, devices, operators)
 
-    def create_device_model(self, devices):
+    def create_device_model(self, tasks, devices):
         data = {}
         """Stores the data for the problem."""
         data["resource_capability"] = []
+        data["data_sources"] = []
 
         for device in devices:
             data["resource_capability"].append([device["resources"]["system"][key] for key in device["resources"]["system"]])
 
-        data["transmission_speed"] = [[0, 6.43163439, 19.35637777, 15.13368045, 13.53071896, 11.69206187],
-                                      [6.43163439, 0, 17.22729904, 18.4682481, 5.52004585, 8.88291174],
-                                      [19.35637777, 17.22729904, 0, 16.86937148, 10.66980807, 13.09753162],
-                                      [15.13368045, 18.4682481, 10.66980807, 0, 14.25380426, 14.14231382],
-                                      [13.53071896, 5.52004585, 13.09753162, 14.25380426, 0, 6.70848206],
-                                      [11.69206187, 8.88291174, 9.19870435, 14.14231382, 6.70848206, 0]]
+        for task in tasks:
+            for device in devices:
+                if device["resources"]["hardware"] is not None:
+                    for hardware in device["resources"]["hardware"]:
+                        if hardware["id"] == task["source"]:
+                            data["data_sources"].append(device["id"])
 
+
+        data["transmission_speed"] = self.generate_transmission_rate_matrix(len(devices))
+
+        self.num_devices = len(devices)
         print(data)
 
         return data
 
     def create_operator_model(self, tasks, devices, operators):
         data = {}
-        num_devices = len(devices)
-        num_tasks = len(tasks)
         data["operator_accuracies"] = []
         data["resource_requirements"] = []
         data["processing_speed"] = []
         data["power_consumptions"] = []
+        data["operator_types"] = []
+        count = 0
         for task in tasks:
             object_type = task["object"]
-            data_source = task["source"]
             device_names = [dev["model"] for dev in devices]
             for op in operators:
                 if op["type"] == "processing" and op["object"] == object_type:
                     op_name = op["name"]
                     data["operator_accuracies"].append(op["accuracy"])
                     data["resource_requirements"].append([op["requirements"]["system"][key] for key in op["requirements"]["system"]])
-
+                    data["operator_types"].append(op["object"])
                     data["processing_speed"].append([speed_lookup_table[op_name][dev_name] for dev_name in device_names])
                     data["power_consumptions"].append([speed_lookup_table[op_name][dev_name] for dev_name in device_names])
+                    count += 1
+        self.num_operators = count
 
-        print(data)
         return data
 
+    def generate_transmission_rate_matrix(self, n, min_rate=5, max_rate=15):
+        # 创建一个n*n的矩阵，初始值设为正无穷
+        transmission_matrix = np.full((n, n), np.inf)
+
+        # 对角线上的元素设为正无穷
+        np.fill_diagonal(transmission_matrix, 0)
+
+        # 随机生成不同device之间的传输速率并保持对称性
+        for i in range(n):
+            for j in range(i + 1, n):
+                rate = np.random.randint(min_rate, max_rate + 1)  # 生成随机速率
+                transmission_matrix[i, j] = rate
+                transmission_matrix[j, i] = rate  # 对称性
+
+        return transmission_matrix
 
     def inverse(self, x):
         if x == 0:
@@ -83,30 +107,112 @@ class MIP_Decider:
         else:
             return 1 / x
 
-    def is_hardware_consistent(self, hardware_resources, hardware_requirements):
-        if hardware_requirements is None:
-            return True
-        if hardware_requirements is not None and hardware_resources is None:
-            return False
-        for requirement in hardware_requirements:
-            flag = False
-            for resource in hardware_resources:
-                if resource["sensor"] == requirement["sensor"]:
-                    flag = True
-            if not flag:
-                return False
-        return True
-    def is_system_consistent(self, system_resources, system_requirements):
-        for key, value in system_requirements.items():
-            if key not in system_resources:
-                return False
-            if key in system_resources:
-                if isinstance(value, int) or isinstance(value, float):
-                    if system_resources[key] < system_resources[key]:
-                        return False
-                else:
-                    if system_requirements[key] != system_resources[key]:
-                        return False
+    def make_decision(self):
+        # Create the MIP solver
+        solver = pywraplp.Solver.CreateSolver('SCIP')
 
-        return True
+        T = self.num_tasks
+        O = self.num_operators
+        D = self.num_devices
+
+        # Create binary decision variables x_ij for the binary matrix x
+        x = {}  # x_jk - operator j on device k
+        for j in range(O):
+            for k in range(D):
+                x[j, k] = solver.IntVar(0, 1, f'x_{j}_{k}')
+
+        # Create binary decision variables y_jk for the binary vector y
+        y = {}  # y_ij - data source i to operator j
+        for i in range(T):
+            for j in range(O):
+                y[i, j] = solver.IntVar(0, 1, f'y_{i}_{j}')
+
+        z = {}
+        for i in range(T):
+            for j in range(O):
+                for k in range(D):
+                    z[i, j, k] = solver.IntVar(0, 1, f'z_{i}_{j}_{k}')
+
+        # Add constraints to represent x_ij * y_jk as binary variables
+        for i in range(T):
+            for j in range(O):
+                for k in range(D):
+                    solver.Add(z[i, j, k] <= x[j, k])
+                    solver.Add(z[i, j, k] <= y[i, j])
+                    solver.Add(z[i, j, k] >= x[j, k] + y[i, j] - 1)
+
+        # Each operator is assigned to at most 1 device.
+        for j in range(O):
+            solver.Add(solver.Sum([x[j, k] for k in range(D)]) <= 1)
+
+        # Each data source transmit to at most one operator
+        for i in range(T):
+            solver.Add(solver.Sum([y[i, j] for j in range(O)]) <= 1)
+
+        # the operator type should be consistent with tasks req
+        # for i in range(T):
+        #     for j in range(O):
+        #         solver.
+        #         solver.Add(y[i, j] == 1).OnlyEnforceIf([self.tasks[i]["object"] == self.operator_data["operator_types"][j]])
+        #         solver.Add(y[i, j] == 0).OnlyEnforceIf([self.tasks[i]["object"] != self.operator_data["operator_types"][j]])
+
+        # operator requirement sum in each device should not exceed its capacity
+        for k in range(D):
+            for t in range(4):
+                solver.Add(solver.Sum([x[j, k] * self.operator_data["resource_requirements"][j][t] for j in range(O)]) <=
+                       self.device_data["resource_capability"][k][t])
+
+        utilities = []
+        for i in range(T):
+            for j in range(O):
+                for k in range(D):
+                    source_device_id = self.device_data["data_sources"][i]
+                    utilities.append(z[i, j, k] * self.operator_data["operator_accuracies"][j]
+                                     - z[i, j, k] * max((1 - 10 * self.inverse(
+                        (self.device_data["transmission_speed"][source_device_id][k] + self.operator_data["processing_speed"][j][k]))), 0))
+
+        # transmission_times = {}
+        # for i in range(D):
+        #     for j in range(O):
+        #         for k in range(D):
+        #             transmission_times[i, j, k] = z[i, j, k]*device_data["transmission_speed"][i][k]
+
+        # for i in range(D):
+        #     for j in range(O):
+        #         for k in range(D):
+        #             utilities.append(z[i, j, k]*accuracy[i, j, k]-z[i, j, k]*transmission_times[i, j, k])
+
+        solver.Maximize(solver.Sum(utilities))
+
+        status = solver.Solve()
+
+        if status == pywraplp.Solver.OPTIMAL:
+            print(f"The maximized utility sum = {solver.Objective().Value()}\n")
+            # Print the values of x_ij
+            print("Values of decision variable Y:")
+            for i in range(T):
+                for j in range(O):
+                    if y[i, j].solution_value() != 0:
+                        source_device_id = self.device_data["data_sources"][i]
+                        # print(f"y_{i}_{j} =", y[i, j].solution_value())
+                        print(f"device {source_device_id}(as data source) transmits to operator {j}")
+
+            # Print the values of y_jk
+            print("Values of decision variable X:")
+            for j in range(O):
+                for k in range(D):
+                    if x[j, k].solution_value() != 0:
+                        print(f"operator {j} is deployed on device {k}")
+                    # print(f"x_{j}_{k} =", x[j, k].solution_value())
+
+            # print("Values of z_ijk:")
+            # for i in range(D):
+            #     for j in range(O):
+            #         for k in range(D):
+            #             if z[i, j, k].solution_value() != 0:
+            #                 print(f"z_{i}_{j}_{k} =", z[i, j, k].solution_value())
+        else:
+            print("No optimal solution found.")
+
+
 
