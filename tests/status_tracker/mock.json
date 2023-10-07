@@ -1,0 +1,221 @@
+[
+  {
+    "id": # self-increaming integer from 0,
+    "hostname": #random string,
+    "model": # "raspberrypi-4b" or "jetson-nano" or "jetson-xavier",
+    "ip": "172.22.152.175" #"xx.xx.xx.xx",
+    "arch": #"arm64",
+    "os": "Raspbian GNU/Linux 10 (buster)",
+    "resources": {
+      "system": {
+         "cpu": 4,
+        "gpu": 0,
+        "memory": 4096,
+        "storage": 131072
+      },
+      "hardware": null
+    },
+    "power": "unlimited"
+  },
+  {
+    "id": 2,
+    "hostname": "node2",
+    "model": "raspberrypi-4b",
+    "ip": "172.22.152.175",
+    "arch": "arm64",
+    "os": "Raspbian GNU/Linux 10 (buster)",
+    "resources": {
+      "system": {
+        "cpu": 4,
+        "gpu": 0,
+        "memory": 4096,
+        "storage": 131072
+      },
+      "hardware": [
+        {
+          "id": 1,
+          "sensor": "IMX519"
+        }
+      ]
+
+    },
+    "power": "unlimited"
+  },
+  {
+    "id": 3,
+    "hostname": "node3",
+    "model": "jetson-xavier",
+    "ip": "172.22.152.175",
+    "arch": "arm64",
+    "os": "ubuntu 18.04",
+    "resources": {
+      "system": {
+        "cpu": 4,
+        "gpu": 1,
+        "memory": 32768,
+        "storage": 65600
+      },
+      "hardware": null
+
+    },
+    "power": "unlimited"
+  },
+  {
+    "id": 4,
+    "hostname": "node4",
+    "model": "raspberrypi-4b",
+    "ip": "172.22.152.175",
+    "arch": "arm64",
+    "os": "Raspbian GNU/Linux 10 (buster)",
+    "resources": {
+      "system": {
+        "cpu": 4,
+        "gpu": 0,
+        "memory": 4096,
+        "storage": 131072
+      },
+      "hardware": [
+        {
+          "id": 2,
+          "sensor": "IMX519"
+        }
+      ]
+
+    },
+    "power": "1820"
+  },
+  {
+    "id": 5,
+    "hostname": "node5",
+    "model": "jetson-nano",
+    "ip": "172.22.152.175",
+    "arch": "arm64",
+    "os": "ubuntu 18.04",
+    "resources": {
+      "system": {
+        "cpu": 4,
+        "gpu": 1,
+        "memory": 4096,
+        "storage": 65600
+      },
+      "hardware": null
+
+    },
+    "power": "unlimited"
+  },
+  {
+    "id": 6,
+    "hostname": "master",
+    "model": "raspberrypi-4b",
+    "ip": "172.22.152.175",
+    "arch": "arm64",
+    "os": "Raspbian GNU/Linux 10 (buster)",
+    "resources": {
+      "system": {
+        "cpu": 4,
+        "gpu": 0,
+        "memory": 4096,
+        "storage": 131072
+      },
+      "hardware": null
+
+    },
+    "power": "unlimited"
+  },
+  {
+    "id": 7,
+    "hostname": "mock1",
+    "model": "raspberrypi-4b",
+    "ip": "172.22.152.175",
+    "arch": "arm64",
+    "os": "Raspbian GNU/Linux 10 (buster)",
+    "resources": {
+      "system": {
+        "cpu": 4,
+        "gpu": 0,
+        "memory": 4096,
+        "storage": 131072
+      },
+      "hardware": [
+        {
+          "id": 3,
+          "sensor": "IMX519"
+        }
+      ]
+
+    },
+    "power": "unlimited"
+  },
+  {
+    "id": 8,
+    "hostname": "mock1",
+    "model": "raspberrypi-4b",
+    "ip": "172.22.152.175",
+    "arch": "arm64",
+    "os": "Raspbian GNU/Linux 10 (buster)",
+    "resources": {
+      "system": {
+        "cpu": 4,
+        "gpu": 0,
+        "memory": 4096,
+        "storage": 131072
+      },
+      "hardware": [
+        {
+          "id": 4,
+          "sensor": "IMX519"
+        }
+      ]
+
+    },
+    "power": "unlimited"
+  },
+  {
+    "id": 9,
+    "hostname": "mock2",
+    "model": "raspberrypi-4b",
+    "ip": "172.22.152.175",
+    "arch": "arm64",
+    "os": "Raspbian GNU/Linux 10 (buster)",
+    "resources": {
+      "system": {
+        "cpu": 4,
+        "gpu": 0,
+        "memory": 4096,
+        "storage": 131072
+      },
+      "hardware": [
+        {
+          "id": 5,
+          "sensor": "IMX519"
+        }
+      ]
+
+    },
+    "power": "unlimited"
+  },
+  {
+    "id": 10,
+    "hostname": "mock3",
+    "model": "raspberrypi-4b",
+    "ip": "172.22.152.175",
+    "arch": "arm64",
+    "os": "Raspbian GNU/Linux 10 (buster)",
+    "resources": {
+      "system": {
+        "cpu": 4,
+        "gpu": 0,
+        "memory": 4096,
+        "storage": 131072
+      },
+      "hardware": [
+        {
+          "id": 6,
+          "sensor": "IMX519"
+        }
+      ]
+
+    },
+    "power": "unlimited"
+  }
+]

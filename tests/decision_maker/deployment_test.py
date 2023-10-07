@@ -4,6 +4,7 @@ import os
 import numpy as np
 from greedy_deploy import Greedy_Decider
 from MIP_deploy import MIP_Decider
+from tests.status_tracker.device_mock import generate_devices
 
 cur_dir = os.getcwd()
 X = np.zeros((1000, 1000)) # operator - device
@@ -65,7 +66,8 @@ def make_decision_from_task_new(tasks):
     device_file = os.path.join(cur_dir, "../status_tracker/devices.json")
     operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
 
-    device_list = read_json(device_file)
+    # device_list = read_json(device_file)
+    device_list = generate_devices(10)
     operator_list = read_json(operator_file)
 
     decision_maker = MIP_Decider(tasks, device_list, operator_list)
@@ -76,6 +78,7 @@ tasks = [
         "id": 0,
         "source": 1,
         "object": "human",
+        "object_code": 1,
         "delay": 10,
         "priority": 10
     },
@@ -83,6 +86,7 @@ tasks = [
         "id": 1,
         "source": 2,
         "object": "fire",
+        "object_code": 2,
         "delay": 10,
         "priority": 5
     },
@@ -90,12 +94,14 @@ tasks = [
         "id": 2,
         "source": 3,
         "object": "fire",
+        "object_code": 2,
         "delay": 10,
         "priority": 2
     },
     {
         "id": 3,
         "source": 4,
+        "object_code": 2,
         "object": "fire",
         "delay": 10,
         "priority": 1

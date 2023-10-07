@@ -1,4 +1,3 @@
-import cvxpy as cp
 import numpy as np
 import json
 import os
@@ -57,7 +56,6 @@ class MIP_Decider:
         data["transmission_speed"] = self.generate_transmission_rate_matrix(len(devices))
 
         self.num_devices = len(devices)
-        print(data)
 
         return data
 
@@ -77,7 +75,7 @@ class MIP_Decider:
                     op_name = op["name"]
                     data["operator_accuracies"].append(op["accuracy"])
                     data["resource_requirements"].append([op["requirements"]["system"][key] for key in op["requirements"]["system"]])
-                    data["operator_types"].append(op["object"])
+                    data["operator_types"].append(op["object_code"])
                     data["processing_speed"].append([speed_lookup_table[op_name][dev_name] for dev_name in device_names])
                     data["power_consumptions"].append([speed_lookup_table[op_name][dev_name] for dev_name in device_names])
                     count += 1
@@ -145,16 +143,20 @@ class MIP_Decider:
         for j in range(O):
             solver.Add(solver.Sum([x[j, k] for k in range(D)]) <= 1)
 
-        # Each data source transmit to at most one operator
+        # Each data source transmit to at  most one operator
         for i in range(T):
             solver.Add(solver.Sum([y[i, j] for j in range(O)]) <= 1)
 
         # the operator type should be consistent with tasks req
-        # for i in range(T):
-        #     for j in range(O):
-        #         solver.
-        #         solver.Add(y[i, j] == 1).OnlyEnforceIf([self.tasks[i]["object"] == self.operator_data["operator_types"][j]])
-        #         solver.Add(y[i, j] == 0).OnlyEnforceIf([self.tasks[i]["object"] != self.operator_data["operator_types"][j]])
+        for i in range(T):
+            for j in range(O):
+                solver.Add(y[i, j]*self.tasks[i]["object_code"] == y[i, j]*self.operator_data["operator_types"][j])
+
+        # operators in y should be consistent with operators in x
+            for j in range(O):
+                solver.Add(solver.Sum([y[i, j] for i in range(T)]) == solver.Sum([x[j, k] for k in range(D)]))
+
+
 
         # operator requirement sum in each device should not exceed its capacity
         for k in range(D):
@@ -205,12 +207,13 @@ class MIP_Decider:
                         print(f"operator {j} is deployed on device {k}")
                     # print(f"x_{j}_{k} =", x[j, k].solution_value())
 
-            # print("Values of z_ijk:")
-            # for i in range(D):
-            #     for j in range(O):
-            #         for k in range(D):
-            #             if z[i, j, k].solution_value() != 0:
-            #                 print(f"z_{i}_{j}_{k} =", z[i, j, k].solution_value())
+            print("Values of z_ijk:")
+            for i in range(T):
+                for j in range(O):
+                    for k in range(D):
+                        if z[i, j, k].solution_value() != 0:
+                            source_device_id = self.device_data["data_sources"][i]
+                            print(f"z_{source_device_id}_{j}_{k} =", z[i, j, k].solution_value())
         else:
             print("No optimal solution found.")
 
