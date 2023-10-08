@@ -1,1 +1,1 @@
-docker run -v /run/udev:/run/udev --privileged --device=/dev/vchiq:/dev/vchiq -v /var/tmp:/usr/src -p 5000:5000 -p 6379:6379 -d joelee0515/videosource:picamera2-and-redis
+docker run -v /run/udev:/run/udev --rm --privileged --device=/dev/vchiq:/dev/vchiq -v /var/tmp:/usr/src -p 5000:5000 -p 6379:6379 -d joelee0515/videosource:picamera2-and-redis

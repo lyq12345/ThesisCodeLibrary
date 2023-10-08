@@ -67,7 +67,7 @@ def make_decision_from_task_new(tasks):
     operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
 
     # device_list = read_json(device_file)
-    device_list = generate_devices(10)
+    device_list = generate_devices(50)
     operator_list = read_json(operator_file)
 
     decision_maker = MIP_Decider(tasks, device_list, operator_list)

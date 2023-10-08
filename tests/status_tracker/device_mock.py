@@ -63,7 +63,8 @@ jetson_xavier_model = {
 sensor_model = [
         {
           "id": 1,
-          "sensor": "IMX519"
+          "sensor": "IMX519",
+            "speed": 0.4830
         }
     ]
 
