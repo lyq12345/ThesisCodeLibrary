@@ -1,14 +1,17 @@
 import json
-from typing import List, Dict
+import time
 import os
 import numpy as np
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 from greedy_deploy import Greedy_Decider
 from MIP_deploy import MIP_Decider
-from tests.status_tracker.device_mock import generate_devices
+
+from status_tracker.task_mock import generate_tasks
+from status_tracker.device_mock import generate_devices
 
 cur_dir = os.getcwd()
-X = np.zeros((1000, 1000)) # operator - device
-Y = np.zeros((1000, 1000)) # task - processing operator
 def read_json(filename):
     with open(filename, 'r') as json_file:
         data = json.load(json_file)
@@ -62,16 +65,16 @@ def make_decison_from_tasks(task_list):
 
     solution = decision_maker.match_operators_with_devices(operator_pairs, device_list)
 
-def make_decision_from_task_new(tasks):
-    device_file = os.path.join(cur_dir, "../status_tracker/devices.json")
+def make_decision_from_task_new(task_list, device_list):
     operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
-
-    # device_list = read_json(device_file)
-    device_list = generate_devices(50)
     operator_list = read_json(operator_file)
 
-    decision_maker = MIP_Decider(tasks, device_list, operator_list)
+    decision_maker = MIP_Decider(task_list, device_list, operator_list)
+    start_time = time.time()
     decision_maker.make_decision()
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f"Decision making time: {elapsed_time} s")
 
 tasks = [
     {
@@ -107,6 +110,22 @@ tasks = [
         "priority": 1
     }
 ]
+
+num_devices = 20
+num_tasks = 3
+
+if len(sys.argv) != 3:
+    print("not enough parameters")
+else:
+    # 获取命令行参数
+    arg1 = sys.argv[1]
+    arg2 = sys.argv[2]
+
+    num_devices = int(arg1)
+    num_tasks = int(arg2)
+
 # make_decison_from_tasks(tasks)
-make_decision_from_task_new(tasks)
+device_list = generate_devices(num_devices)
+task_list = generate_tasks(num_tasks, device_list)
+make_decision_from_task_new(task_list, device_list)
 

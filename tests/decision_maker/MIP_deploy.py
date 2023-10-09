@@ -1,6 +1,4 @@
 import numpy as np
-import json
-import os
 from ortools.linear_solver import pywraplp
 
 
@@ -9,7 +7,6 @@ speed_lookup_table = {
     "jetson-nano": 4.364,
     "raspberrypi-4b": 7.0823,
     "jetson-xavier": 2.6235
-
   },
   "joelee0515/firedetection:tinyyolov3-measure-time": {
     "jetson-nano": 0.5549,
@@ -207,13 +204,24 @@ class MIP_Decider:
                         print(f"operator {j} is deployed on device {k}")
                     # print(f"x_{j}_{k} =", x[j, k].solution_value())
 
+            data_flow_count = 0
+
             print("Values of z_ijk:")
             for i in range(T):
                 for j in range(O):
                     for k in range(D):
                         if z[i, j, k].solution_value() != 0:
+                            print(f"data flow {data_flow_count}: ")
                             source_device_id = self.device_data["data_sources"][i]
-                            print(f"z_{source_device_id}_{j}_{k} =", z[i, j, k].solution_value())
+                            print(f"sensor on device {source_device_id} transmits data to operator {j} deployed on device {k}")
+                            accuracy = self.operator_data["operator_accuracies"][j]
+                            delay = self.device_data["transmission_speed"][source_device_id][k] + self.operator_data["processing_speed"][j][k]
+                            print(f"accuracy: {accuracy}")
+                            print(f"delay: {delay}")
+
+                            print("------------------------------------------------------------")
+                            data_flow_count += 1
+
         else:
             print("No optimal solution found.")
 

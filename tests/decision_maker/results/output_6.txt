@@ -1,0 +1,48 @@
+The maximized utility sum = 4.2
+
+Values of decision variable Y:
+device 33(as data source) transmits to operator 5
+device 5(as data source) transmits to operator 3
+device 34(as data source) transmits to operator 11
+device 49(as data source) transmits to operator 9
+device 4(as data source) transmits to operator 7
+device 7(as data source) transmits to operator 1
+Values of decision variable X:
+operator 1 is deployed on device 5
+operator 3 is deployed on device 0
+operator 5 is deployed on device 0
+operator 7 is deployed on device 3
+operator 9 is deployed on device 7
+operator 11 is deployed on device 5
+Values of z_ijk:
+data flow 0: 
+sensor on device 33 transmits data to operator 5 deployed on device 0
+accuracy: 0.7
+delay: 9.364
+------------------------------------------------------------
+data flow 1: 
+sensor on device 5 transmits data to operator 3 deployed on device 0
+accuracy: 0.7
+delay: 9.364
+------------------------------------------------------------
+data flow 2: 
+sensor on device 34 transmits data to operator 11 deployed on device 5
+accuracy: 0.7
+delay: 9.6235
+------------------------------------------------------------
+data flow 3: 
+sensor on device 49 transmits data to operator 9 deployed on device 7
+accuracy: 0.7
+delay: 8.864799999999999
+------------------------------------------------------------
+data flow 4: 
+sensor on device 4 transmits data to operator 7 deployed on device 3
+accuracy: 0.7
+delay: 9.864799999999999
+------------------------------------------------------------
+data flow 5: 
+sensor on device 7 transmits data to operator 1 deployed on device 5
+accuracy: 0.7
+delay: 7.6235
+------------------------------------------------------------
+Decision making time: 194.47985410690308 s
