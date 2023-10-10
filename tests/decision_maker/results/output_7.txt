@@ -1,0 +1,55 @@
+The maximized utility sum = 4.900000000000001
+
+Values of decision variable Y:
+device 7(as data source) transmits to operator 11
+device 18(as data source) transmits to operator 7
+device 4(as data source) transmits to operator 3
+device 5(as data source) transmits to operator 1
+device 8(as data source) transmits to operator 9
+device 16(as data source) transmits to operator 13
+device 13(as data source) transmits to operator 5
+Values of decision variable X:
+operator 1 is deployed on device 5
+operator 3 is deployed on device 4
+operator 5 is deployed on device 13
+operator 7 is deployed on device 3
+operator 9 is deployed on device 2
+operator 11 is deployed on device 3
+operator 13 is deployed on device 14
+Values of z_ijk:
+data flow 0:
+sensor on device 7 transmits data to operator 11 deployed on device 3
+accuracy: 0.7
+delay: 9.864799999999999
+------------------------------------------------------------
+data flow 1:
+sensor on device 18 transmits data to operator 7 deployed on device 3
+accuracy: 0.7
+delay: 9.864799999999999
+------------------------------------------------------------
+data flow 2:
+sensor on device 4 transmits data to operator 3 deployed on device 4
+accuracy: 0.7
+delay: 4.4829
+------------------------------------------------------------
+data flow 3:
+sensor on device 5 transmits data to operator 1 deployed on device 5
+accuracy: 0.7
+delay: 3.8648
+------------------------------------------------------------
+data flow 4:
+sensor on device 8 transmits data to operator 9 deployed on device 2
+accuracy: 0.7
+delay: 9.4829
+------------------------------------------------------------
+data flow 5:
+sensor on device 16 transmits data to operator 13 deployed on device 14
+accuracy: 0.7
+delay: 9.864799999999999
+------------------------------------------------------------
+data flow 6:
+sensor on device 13 transmits data to operator 5 deployed on device 13
+accuracy: 0.7
+delay: 4.4829
+------------------------------------------------------------
+Decision making time: 38590.69291424751 s

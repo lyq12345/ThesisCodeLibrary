@@ -1,8 +1,8 @@
 import random
 
 
-def generate_tasks(num_tasks, num_sensors):
-    sensors_list = list(range(num_sensors))
+def generate_tasks(num_tasks, device_list):
+    sensors_list = list(range(len(device_list)))
     random_selection = random.sample(sensors_list, num_tasks)
     print(random_selection)
 
@@ -16,6 +16,3 @@ def generate_tasks(num_tasks, num_sensors):
 
     return task_list
 
-
-task_list = generate_tasks(5, 10)
-print(task_list)
