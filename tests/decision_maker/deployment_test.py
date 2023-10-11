@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from greedy_deploy import Greedy_Decider
 from MIP_deploy import MIP_Decider
+from TOPSIS_deploy import TOPSIS_decider
 
 from status_tracker.task_mock import generate_tasks
 from status_tracker.device_mock import generate_devices
@@ -69,7 +70,8 @@ def make_decision_from_task_new(task_list, device_list):
     operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
     operator_list = read_json(operator_file)
 
-    decision_maker = MIP_Decider(task_list, device_list, operator_list)
+    # decision_maker = MIP_Decider(task_list, device_list, operator_list)
+    decision_maker = TOPSIS_decider(task_list, device_list, operator_list)
     start_time = time.time()
     decision_maker.make_decision()
     end_time = time.time()
@@ -112,7 +114,7 @@ tasks = [
 ]
 
 num_devices = 20
-num_tasks = 7
+num_tasks = 3
 
 if len(sys.argv) != 3:
     print("not enough parameters")

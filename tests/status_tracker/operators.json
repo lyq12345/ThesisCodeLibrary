@@ -77,22 +77,5 @@
       },
       "hardware": null
     }
-  },
-  {
-    "name": "joelee0515/videosource:picamera2-and-redis",
-    "type": "source",
-    "sensor": "IMX519",
-    "speed": 0,
-    "requirements": {
-      "system": {
-        "cpu": 2,
-        "gpu": 0,
-        "storage": 952,
-        "memory": 654
-      },
-      "hardware": [{
-        "sensor": "IMX519"
-      }]
-    }
   }
 ]
