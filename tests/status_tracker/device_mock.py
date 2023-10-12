@@ -94,8 +94,10 @@ def create_from_model(id, model, sensor, power):
 
 def generate_devices(num_devices):
     device_list = []
+    options = ["raspberrypi-4b", "jetson-nano", "jetson-xavier"]
+    weights = [0.7, 0.2, 0.1]  # 每个选项的出现概率
     for id in range(num_devices):
-        model = random.choice(["raspberrypi-4b", "jetson-nano", "jetson-xavier"])
+        model = random.choices(options, weights, k=1)[0]
         # sensor = random.choice([True, False])
         sensor = True
         power = random.choice([True, False])

@@ -128,6 +128,8 @@ else:
 
 # make_decison_from_tasks(tasks)
 device_list = generate_devices(num_devices)
+# for dev in device_list:
+#     print(dev["model"])
 task_list = generate_tasks(num_tasks, device_list)
 make_decision_from_task_new(task_list, device_list)
 
