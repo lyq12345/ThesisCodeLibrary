@@ -1,16 +1,22 @@
 import random
 
+object_dict = {
+    "human": 1,
+    "fire": 2
+}
 
 def generate_tasks(num_tasks, device_list):
     sensors_list = list(range(len(device_list)))
     random_selection = random.sample(sensors_list, num_tasks)
-    print(random_selection)
+    # print(random_selection)
 
     task_list = []
     count = 0
 
     for sensor in random_selection:
-        data = {"id": count, "source": sensor, "object": "human", "object_code": 1, "delay": 10, "priority": 10}
+        object = random.choice(["human", "fire"])
+        object_code = object_dict[object]
+        data = {"id": count, "source": sensor, "object": object, "object_code": object_code, "delay": 10, "priority": 10}
         count += 1
         task_list.append(data)
 

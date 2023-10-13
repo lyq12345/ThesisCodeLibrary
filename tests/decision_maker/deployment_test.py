@@ -114,7 +114,7 @@ tasks = [
 ]
 
 num_devices = 20
-num_tasks = 3
+num_tasks = 5
 
 if len(sys.argv) != 3:
     print("not enough parameters")
@@ -131,5 +131,6 @@ device_list = generate_devices(num_devices)
 # for dev in device_list:
 #     print(dev["model"])
 task_list = generate_tasks(num_tasks, device_list)
+print(task_list)
 make_decision_from_task_new(task_list, device_list)
 
