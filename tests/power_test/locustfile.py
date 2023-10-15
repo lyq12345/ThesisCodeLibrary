@@ -15,7 +15,7 @@ def resize_img(img, new_width):
     return resized_image
 
 class QuickstartUser(HttpUser):
-    #wait_time = between(1, 2)
+    wait_time = between(1, 1)
 
 
     def on_start(self):
