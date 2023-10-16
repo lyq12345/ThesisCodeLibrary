@@ -103,6 +103,7 @@ class MIP_Decider:
             return 1 / x
 
     def make_decision(self):
+        print("Running MIP decision maker")
         # Create the MIP solver
         solver = pywraplp.Solver.CreateSolver('SCIP')
 

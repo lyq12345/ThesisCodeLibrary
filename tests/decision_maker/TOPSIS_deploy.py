@@ -167,16 +167,20 @@ class TOPSIS_decider:
             RC[i] = SM_minus[i] / (SM_plus[i] + SM_minus[i])
 
         max_rc = max(RC)
-        selected_mapping_id = 0
+        selected_mapping_id = -1
         for i in range(len(decision_matrix)):
             if RC[i] == max_rc:
                 selected_mapping_id = i
                 break
 
+        if selected_mapping_id != -1:
+            # TODO: resource consumption
+
         return mappings[selected_mapping_id], max_rc
 
 
     def make_decision(self):
+        print("Running TOPSIS decision maker")
         for task in self.tasks:
             object_code = task["object_code"]
             source_device_id = task["source"]
