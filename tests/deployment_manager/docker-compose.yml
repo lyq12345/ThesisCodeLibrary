@@ -13,16 +13,12 @@ services:
     privileged: true
     deploy:
       placement:
-        constraints: [node.role == manager]
+        constraints: [node.hostname==node2]
   processing:
-    image: 127.0.0.1:5000/lyanna-app
+    image: joelee0515/humandetection:tinyyolov3-measure-time
     build: .
     ports:
       - '8848:8848'
-    depends_on:
-      - db
-      - redis
-      - memcached
   visualizer:
     image: dockersamples/visualizer:stable
     ports:
