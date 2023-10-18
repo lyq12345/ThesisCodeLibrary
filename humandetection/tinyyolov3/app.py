@@ -80,5 +80,6 @@ def process_video():
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=8848)
+    # app.run(host="0.0.0.0", port=8848, threaded=False)
+    app.run(host="0.0.0.0", port=8848, threaded=False)
 

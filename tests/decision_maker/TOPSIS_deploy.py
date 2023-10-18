@@ -57,7 +57,6 @@ class TOPSIS_decider:
 
 
     def generate_transmission_rate_matrix(self, n, min_rate=5, max_rate=15):
-        # 创建一个n*n的矩阵，初始值设为正无穷
         transmission_matrix = np.full((n, n), np.inf)
 
         # 对角线上的元素设为正无穷
@@ -105,6 +104,18 @@ class TOPSIS_decider:
         device_model = self.devices[device_id]["model"]
         power = power_lookup_table[operator_name][device_model]
         return power
+
+    def deploy(self, mapping):
+        operator_name = mapping[0]
+        device_id = mapping[1]
+        operator_resource = {}
+        for op in self.operators:
+            if operator_name == op["name"]:
+                operator_resource = op["requirements"]["system"]
+
+        for type, amount in operator_resource.items():
+            self.devices[device_id]["resources"]["system"][type] -= amount
+
 
     def calculate_rc(self, source_device_id, operator_candidates):
         # create decision matrix accuracy | delay | power
@@ -174,7 +185,7 @@ class TOPSIS_decider:
                 break
 
         if selected_mapping_id != -1:
-            # TODO: resource consumption
+            self.deploy(mappings[selected_mapping_id])
 
         return mappings[selected_mapping_id], max_rc
 
