@@ -1,5 +1,6 @@
 [
   {
+    "id": 0,
     "name": "joelee0515/firedetection:tinyyolov3-measure-time",
     "type": "processing",
     "object": "fire",
@@ -20,6 +21,7 @@
     }
   },
   {
+    "id": 1,
     "name": "joelee0515/firedetection:yolov3-measure-time",
     "type": "processing",
     "object": "fire",
@@ -40,6 +42,7 @@
     }
   },
   {
+    "id": 2,
     "name": "joelee0515/humandetection:tinyyolov3-measure-time",
     "type": "processing",
     "object": "human",
@@ -60,6 +63,7 @@
     }
   },
   {
+    "id": 3,
     "name": "joelee0515/humandetection:yolov3-measure-time",
     "type": "processing",
     "object": "human",
