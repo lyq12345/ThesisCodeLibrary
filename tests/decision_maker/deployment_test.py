@@ -116,7 +116,7 @@ tasks = [
 ]
 
 num_devices = 20
-num_tasks = 5
+num_tasks = 10
 
 if len(sys.argv) != 3:
     print("not enough parameters")

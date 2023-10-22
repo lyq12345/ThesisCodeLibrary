@@ -1,34 +1,47 @@
-import numpy as np
+import random
 
-processing_speed = np.array([[0.46, 0.58, 1.09, 0.46, 0.46, 0.46],
-                           [3.86, 4.48, 7.21, 3.86, 3.86, 3.86],
-                           [0.42, 0.55, 1.07, 0.42, 0.42, 3.86]])
+# Define the problem - a list of customer locations and a list of potential warehouse locations
+customers = [(1, 2), (3, 4), (5, 6), (7, 8)]
+warehouses = [(2, 3), (6, 7)]
 
-operator_accuracy = np.array([0.45, 0.68, 0.45])
+# Objective function - minimize the total transportation cost
+def objective_function(customers, warehouses):
+    total_cost = 0
+    for c in customers:
+        min_dist = min([abs(c[0]-w[0]) + abs(c[1]-w[1]) for w in warehouses])
+        total_cost += min_dist
+    return total_cost
 
-# Define the Boolean matrices A and B, and the transmission time matrix C
-X = np.array([[0, 0, 0, 1, 0, 0],
-              [0, 0, 0, 0, 1, 0],
-              [0, 0, 0, 0, 0, 1]])
+# Randomly initialize the initial solution
+def random_initial_solution(customers, num_warehouses):
+    return random.sample(customers, num_warehouses)
 
-Y = np.array([[1, 0, 0],
-              [0, 1, 0],
-              [0, 0, 1],
-              [0, 0, 0],
-              [0, 0, 0],
-              [0, 0, 0]])
+# Local search algorithm
+def local_search(customers, num_warehouses, max_iterations):
+    current_solution = random_initial_solution(customers, num_warehouses)
+    current_cost = objective_function(current_solution, warehouses)
 
-transmission_rate = np.random.uniform(5, 20, size=(6, 6))
+    for _ in range(max_iterations):
+        # Generate neighboring solutions by moving one customer to a different warehouse
+        neighbors = []
+        for i in range(num_warehouses):
+            for j in range(len(customers)):
+                if customers[j] not in current_solution:
+                    neighbor_solution = current_solution[:i] + [customers[j]] + current_solution[i+1:]
+                    neighbors.append(neighbor_solution)
 
-# print(C)
+        # Evaluate the neighbors and select the best one
+        best_neighbor = min(neighbors, key=lambda solution: objective_function(solution, warehouses))
 
-# Calculate matrix D
-transmission_delay = np.multiply(Y@X, transmission_rate)
-processing_delay = Y @ np.multiply(X, processing_speed)
-# delay = transmission_delay + processing_delay
-# accuracy = np.multiply(np.sum(X, axis=1), operator_accuracy.T)
+        # If the best neighbor is better than the current solution, update the solution
+        if objective_function(best_neighbor, warehouses) < current_cost:
+            current_solution = best_neighbor
+            current_cost = objective_function(current_solution, warehouses)
 
-# utility = accuracy - np.maximum(0, (delay - 10) / delay)
+    return current_solution, current_cost
 
-print(transmission_delay)
-print(processing_delay)
+# Run the local search
+best_solution, best_cost = local_search(customers, len(warehouses), max_iterations=1000)
+
+print("Best solution:", best_solution)
+print("Best cost:", best_cost)

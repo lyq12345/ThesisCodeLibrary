@@ -77,7 +77,7 @@ class TOPSIS_decider:
                 return False
             if key in system_resources:
                 if isinstance(value, int) or isinstance(value, float):
-                    if system_resources[key] < system_resources[key]:
+                    if system_resources[key] < system_requirements[key]:
                         return False
                 else:
                     if system_requirements[key] != system_resources[key]:

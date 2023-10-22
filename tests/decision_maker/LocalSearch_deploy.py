@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import copy
 import random
 
 
@@ -64,19 +65,19 @@ class LocalSearch_deploy:
         for op in self.operators:
             if op["object"] == object:
                 candidate_operators.append(op)
-        return candidate_operators
+        candidate_op_ids = [d["id"] for d in candidate_operators]
+        return candidate_op_ids
 
 
     def initial_solution(self):
+        devices_copy = copy.deepcopy(self.devices)
         for task in self.tasks:
             task_id = task["id"]
-            candidate_operators = self.get_candidate_operators(task)
-            candidate_op_ids = [d["id"] for d in candidate_operators]
+            candidate_op_ids = self.get_candidate_operators(task)
             selected_op_id = random.choice(candidate_op_ids)
-            candidate_devices = self.filter_devices(self.operators[selected_op_id])
-            candidate_device_id = [d["id"] for d in candidate_devices]
-            selected_device_id = random.choice(candidate_device_id)
-            self.deploy((selected_op_id, selected_device_id))
+            candidate_device_ids = self.filter_devices(devices_copy, selected_op_id)
+            selected_device_id = random.choice(candidate_device_ids)
+            self.deploy(devices_copy, (selected_op_id, selected_device_id))
             self.solution[task_id] = (selected_op_id, selected_device_id)
 
 
@@ -84,12 +85,31 @@ class LocalSearch_deploy:
         pass
 
     def get_neighbors(self, current_solution):
+        # moving one operator to another device; change to another operator
+        device_copy = copy.deepcopy(self.devices)
+        # consume the devices
+        for mapping in current_solution:
+            self.deploy(device_copy, mapping)
+        # print("current solution: ", current_solution)
+
         neighbors = []
         for i in range(len(current_solution)):
-            for j in range(i+1, len(current_solution)):
-                neighbor = current_solution[:]
-                neighbor[i], neighbor[j] = neighbor[j], neighbor[i]
-                neighbors.append(neighbor)
+            candidate_ops = self.get_candidate_operators(self.tasks[i])
+            mapping = current_solution[i]
+
+            # undeploy to release the resources:
+            self.undeploy(device_copy, mapping)
+            # for all other candidate operators:
+            for op_id in candidate_ops:
+                # move operator to a different device
+                filtered_devices = self.filter_devices(device_copy, op_id)
+                for dev_id in filtered_devices:
+                    if op_id == mapping[0] and dev_id==mapping[1]:
+                        continue
+                    neighbor = current_solution[:]
+                    neighbor[i] = (op_id, dev_id)
+                    neighbors.append(neighbor)
+                    # print(neighbor)
         return neighbors
 
     def tabu_search(self, initial_solution, max_iterations, tabu_list_size):
@@ -97,12 +117,14 @@ class LocalSearch_deploy:
         current_solution = initial_solution
         tabu_list = []
 
-        for _ in range(max_iterations):
+        for i in range(max_iterations):
+
             neighbors = self.get_neighbors(current_solution)
             best_neighbor = None
             best_neighbor_utility = float('-inf')
 
             for neighbor in neighbors:
+                # check list
                 if neighbor not in tabu_list:
                     neighbor_utility = self.calculate_utility(neighbor)
                     if neighbor_utility > best_neighbor_utility:
@@ -115,8 +137,13 @@ class LocalSearch_deploy:
             tabu_list.append(best_neighbor)
             if len(tabu_list) > tabu_list_size:
                 tabu_list.pop(0)
-            if self.calculate_utility(best_neighbor) < self.calculate_utility(best_solution):
+            if self.calculate_utility(best_neighbor) > self.calculate_utility(best_solution):
                 best_solution = best_neighbor
+                print(f"best solution after iteration {i}: {self.calculate_utility(best_solution)}")
+
+
+
+        print(best_solution, self.calculate_utility(best_solution))
 
         return best_solution
 
@@ -138,10 +165,9 @@ class LocalSearch_deploy:
     def iterated_local_search(self, max_iterations, max_no_improve):
         # get initial solution
         self.initial_solution()
-        print(self.solution)
         # calculate the cost for initial solutio
         initial_cost = self.calculate_utility(self.solution)
-        print(initial_cost)
+        self.get_neighbors(self.solution)
 
         # for i in range(max_iterations):
         #     # perturbation
@@ -175,7 +201,7 @@ class LocalSearch_deploy:
                 return False
             if key in system_resources:
                 if isinstance(value, int) or isinstance(value, float):
-                    if system_resources[key] < system_resources[key]:
+                    if system_resources[key] < system_requirements[key]:
                         return False
                 else:
                     if system_requirements[key] != system_resources[key]:
@@ -183,12 +209,14 @@ class LocalSearch_deploy:
 
         return True
 
-    def filter_devices(self, operator):
+    def filter_devices(self, devices, operator_id):
         filtered_devices = []
-        for dev in self.devices:
+        operator = self.operators[operator_id]
+        for dev in devices:
             if self.is_system_consistent(dev["resources"]["system"], operator["requirements"]["system"]):
                 filtered_devices.append(dev)
-        return filtered_devices
+        filtered_device_ids = [d["id"] for d in filtered_devices]
+        return filtered_device_ids
 
     def calculate_utility(self, solution):
         sum_uti = 0
@@ -217,7 +245,7 @@ class LocalSearch_deploy:
         power = power_lookup_table[operator_name][device_model]
         return power
 
-    def deploy(self, mapping):
+    def deploy(self, devices, mapping):
         operator_id = mapping[0]
         device_id = mapping[1]
         operator_resource = {}
@@ -226,9 +254,9 @@ class LocalSearch_deploy:
                 operator_resource = op["requirements"]["system"]
 
         for type, amount in operator_resource.items():
-            self.devices[device_id]["resources"]["system"][type] -= amount
+            devices[device_id]["resources"]["system"][type] -= amount
 
-    def undeploy(self, mapping):
+    def undeploy(self, devices, mapping):
         operator_id = mapping[0]
         device_id = mapping[1]
         operator_resource = {}
@@ -237,11 +265,12 @@ class LocalSearch_deploy:
                 operator_resource = op["requirements"]["system"]
 
         for type, amount in operator_resource.items():
-            self.devices[device_id]["resources"]["system"][type] += amount
+            devices[device_id]["resources"]["system"][type] += amount
 
     def make_decision(self):
         print("Running Local Search decision maker")
-        self.iterated_local_search(max_iterations=10, max_no_improve=5)
-
+        # self.iterated_local_search(max_iterations=10, max_no_improve=5)
+        self.initial_solution()
+        self.tabu_search(self.solution, max_iterations=100, tabu_list_size=20)
 
 
