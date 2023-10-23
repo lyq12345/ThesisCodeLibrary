@@ -82,9 +82,35 @@ class LocalSearch_deploy:
 
 
     def perturbation(self, current_solution):
-        pass
+        # randomly swap two task assignments of the same type
+        # categorize tasks with the same object type
+        type_dict = {}
 
-    def get_neighbors(self, current_solution):
+        for i, mapping in enumerate(current_solution):
+            operator_id = mapping[0]
+            object_type = self.operators[operator_id]["object"]
+            if object_type not in type_dict.keys():
+                type_dict[object_type] = []
+            type_dict[object_type].append(i)
+        swapable_objects = []
+        for key, value in type_dict.items():
+            if len(value) >= 2:
+                swapable_objects.append(key)
+        if len(swapable_objects) == 0:
+            return current_solution
+        new_solution = current_solution[:]
+        selected_group = random.choice(swapable_objects)
+        task_ids = type_dict[selected_group]
+        swap_id1, swap_id2 = random.sample(task_ids, 2)
+        new_solution[swap_id1], new_solution[swap_id2] = new_solution[swap_id2], new_solution[swap_id1]
+        return new_solution
+
+
+
+
+
+
+    def get_neighbors(self, current_solution, tabu_list):
         # moving one operator to another device; change to another operator
         device_copy = copy.deepcopy(self.devices)
         # consume the devices
@@ -108,38 +134,39 @@ class LocalSearch_deploy:
                         continue
                     neighbor = current_solution[:]
                     neighbor[i] = (op_id, dev_id)
-                    neighbors.append(neighbor)
+                    if neighbor not in tabu_list:
+                        neighbors.append(neighbor)
                     # print(neighbor)
         return neighbors
 
-    def tabu_search(self, initial_solution, max_iterations, tabu_list_size):
+    def tabu_search(self, initial_solution, max_iterations, tabu_list_size, max_no_improvements):
         best_solution = initial_solution
+        best_utility = self.calculate_utility(best_solution)
         current_solution = initial_solution
         tabu_list = []
+        count = 0
 
         for i in range(max_iterations):
 
-            neighbors = self.get_neighbors(current_solution)
-            best_neighbor = None
-            best_neighbor_utility = float('-inf')
+            current_solution = self.local_search(current_solution, tabu_list)
+            current_utility = self.calculate_utility(current_solution)
 
-            for neighbor in neighbors:
-                # check list
-                if neighbor not in tabu_list:
-                    neighbor_utility = self.calculate_utility(neighbor)
-                    if neighbor_utility > best_neighbor_utility:
-                        best_neighbor = neighbor
-                        best_neighbor_utility = neighbor_utility
-            if best_neighbor is None:
-                break
-
-            current_solution = best_neighbor
-            tabu_list.append(best_neighbor)
-            if len(tabu_list) > tabu_list_size:
-                tabu_list.pop(0)
-            if self.calculate_utility(best_neighbor) > self.calculate_utility(best_solution):
-                best_solution = best_neighbor
-                print(f"best solution after iteration {i}: {self.calculate_utility(best_solution)}")
+            # if there's improvements
+            if current_utility > best_utility:
+                best_solution = current_solution
+                best_utility = current_utility
+                tabu_list.append(current_solution)
+                if len(tabu_list) > tabu_list_size:
+                    tabu_list.pop(0)
+                print(f"best solution after iteration {i}: {best_utility}")
+            else:
+                if count <= max_no_improvements:
+                    # perturbation
+                    current_solution = self.perturbation(current_solution)
+                    count += 1
+                    print("No better solution found. Perturbation performed.")
+                else:
+                    break
 
 
 
@@ -151,12 +178,20 @@ class LocalSearch_deploy:
 
 
 
-    def local_search(self, max_no_improve):
-        count = 0
-        initial_cost = self.calculate_utility(self.solution)
+    def local_search(self, current_solution, tabu_list):
+        neighbors = self.get_neighbors(current_solution, tabu_list)
+        best_neighbor = None
+        best_neighbor_utility = float('-inf')
 
-        new_cost = 0
-        new_solution = [None]*len(self.solution)
+        for neighbor in neighbors:
+            # check list
+            if neighbor not in tabu_list:
+                neighbor_utility = self.calculate_utility(neighbor)
+                if neighbor_utility > best_neighbor_utility:
+                    best_neighbor = neighbor
+                    best_neighbor_utility = neighbor_utility
+
+        return best_neighbor
 
 
 
@@ -271,6 +306,6 @@ class LocalSearch_deploy:
         print("Running Local Search decision maker")
         # self.iterated_local_search(max_iterations=10, max_no_improve=5)
         self.initial_solution()
-        self.tabu_search(self.solution, max_iterations=100, tabu_list_size=20)
+        self.tabu_search(self.solution, max_iterations=100, tabu_list_size=20, max_no_improvements=20)
 
 

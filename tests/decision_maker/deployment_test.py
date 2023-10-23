@@ -115,7 +115,7 @@ tasks = [
     }
 ]
 
-num_devices = 20
+num_devices = 40
 num_tasks = 10
 
 if len(sys.argv) != 3:
