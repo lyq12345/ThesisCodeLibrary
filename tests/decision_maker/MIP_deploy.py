@@ -26,14 +26,15 @@ speed_lookup_table = {
 }
 
 class MIP_Decider:
-    def __init__(self, tasks, devices, operators):
+    def __init__(self, tasks, devices, operators, transmission_matrix):
         self.num_tasks = len(tasks)
         self.num_devices = None
+        self.operator_list = operators
         self.tasks = tasks
-        self.device_data = self.create_device_model(tasks, devices)
+        self.device_data = self.create_device_model(tasks, devices, transmission_matrix)
         self.operator_data = self.create_operator_model(tasks, devices, operators)
 
-    def create_device_model(self, tasks, devices):
+    def create_device_model(self, tasks, devices, transmission_matrix):
         data = {}
         """Stores the data for the problem."""
         data["resource_capability"] = []
@@ -50,7 +51,7 @@ class MIP_Decider:
                             data["data_sources"].append(device["id"])
 
 
-        data["transmission_speed"] = self.generate_transmission_rate_matrix(len(devices))
+        data["transmission_speed"] = transmission_matrix
 
         self.num_devices = len(devices)
 
@@ -63,6 +64,7 @@ class MIP_Decider:
         data["processing_speed"] = []
         data["power_consumptions"] = []
         data["operator_types"] = []
+        data["operator_ids"] = []
         count = 0
         for task in tasks:
             object_type = task["object"]
@@ -73,6 +75,7 @@ class MIP_Decider:
                     data["operator_accuracies"].append(op["accuracy"])
                     data["resource_requirements"].append([op["requirements"]["system"][key] for key in op["requirements"]["system"]])
                     data["operator_types"].append(op["object_code"])
+                    data["operator_ids"].append(op["id"])
                     data["processing_speed"].append([speed_lookup_table[op_name][dev_name] for dev_name in device_names])
                     data["power_consumptions"].append([speed_lookup_table[op_name][dev_name] for dev_name in device_names])
                     count += 1
@@ -187,44 +190,50 @@ class MIP_Decider:
         status = solver.Solve()
 
         if status == pywraplp.Solver.OPTIMAL:
-            print(f"The maximized utility sum = {solver.Objective().Value()}\n")
-            # Print the values of x_ij
-            print("Values of decision variable Y:")
-            for i in range(T):
-                for j in range(O):
-                    if y[i, j].solution_value() != 0:
-                        source_device_id = self.device_data["data_sources"][i]
-                        # print(f"y_{i}_{j} =", y[i, j].solution_value())
-                        print(f"device {source_device_id}(as data source) transmits to operator {j}")
-
-            # Print the values of y_jk
-            print("Values of decision variable X:")
-            for j in range(O):
-                for k in range(D):
-                    if x[j, k].solution_value() != 0:
-                        print(f"operator {j} is deployed on device {k}")
-                    # print(f"x_{j}_{k} =", x[j, k].solution_value())
-
-            data_flow_count = 0
-
-            print("Values of z_ijk:")
+            # print(f"The maximized utility sum = {solver.Objective().Value()}\n")
+            # # Print the values of x_ij
+            # print("Values of decision variable Y:")
+            # for i in range(T):
+            #     for j in range(O):
+            #         if y[i, j].solution_value() != 0:
+            #             source_device_id = self.device_data["data_sources"][i]
+            #             # print(f"y_{i}_{j} =", y[i, j].solution_value())
+            #             print(f"device {source_device_id}(as data source) transmits to operator {j}")
+            #
+            # # Print the values of y_jk
+            # print("Values of decision variable X:")
+            # for j in range(O):
+            #     for k in range(D):
+            #         if x[j, k].solution_value() != 0:
+            #             print(f"operator {j} is deployed on device {k}")
+            #         # print(f"x_{j}_{k} =", x[j, k].solution_value())
+            #
+            # data_flow_count = 0
+            #
+            # print("Values of z_ijk:")
+            solution = [None]*T
+            best_utility = solver.Objective().Value()
             for i in range(T):
                 for j in range(O):
                     for k in range(D):
                         if z[i, j, k].solution_value() != 0:
-                            print(f"data flow {data_flow_count}: ")
-                            source_device_id = self.device_data["data_sources"][i]
-                            print(f"sensor on device {source_device_id} transmits data to operator {j} deployed on device {k}")
-                            accuracy = self.operator_data["operator_accuracies"][j]
-                            delay = self.device_data["transmission_speed"][source_device_id][k] + self.operator_data["processing_speed"][j][k]
-                            print(f"accuracy: {accuracy}")
-                            print(f"delay: {delay}")
-
-                            print("------------------------------------------------------------")
-                            data_flow_count += 1
+                            op_id = self.operator_data["operator_ids"][j]
+                            solution[i] = (op_id, k)
+                            # print(f"data flow {data_flow_count}: ")
+                            # source_device_id = self.device_data["data_sources"][i]
+                            # print(f"sensor on device {source_device_id} transmits data to operator {j} deployed on device {k}")
+                            # accuracy = self.operator_data["operator_accuracies"][j]
+                            # delay = self.device_data["transmission_speed"][source_device_id][k] + self.operator_data["processing_speed"][j][k]
+                            # print(f"accuracy: {accuracy}")
+                            # print(f"delay: {delay}")
+                            #
+                            # print("------------------------------------------------------------")
+                            # data_flow_count += 1
+            return solution, best_utility
 
         else:
             print("No optimal solution found.")
+            return None
 
 
 

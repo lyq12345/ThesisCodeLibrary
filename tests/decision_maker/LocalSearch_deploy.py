@@ -51,11 +51,11 @@ power_lookup_table = {
 }
 
 class LocalSearch_deploy:
-    def __init__(self, tasks, devices, operators):
+    def __init__(self, tasks, devices, operators, transmission_matrix):
         self.tasks = tasks
         self.devices = devices
         self.operators = operators
-        self.transmission_matrix = self.generate_transmission_rate_matrix(len(devices))
+        self.transmission_matrix = transmission_matrix
 
         self.solution = [None]*len(tasks)
 
@@ -158,21 +158,18 @@ class LocalSearch_deploy:
                 tabu_list.append(current_solution)
                 if len(tabu_list) > tabu_list_size:
                     tabu_list.pop(0)
-                print(f"best solution after iteration {i}: {best_utility}")
+                # print(f"best solution after iteration {i}: {best_utility}")
             else:
                 if count <= max_no_improvements:
                     # perturbation
                     current_solution = self.perturbation(current_solution)
                     count += 1
-                    print("No better solution found. Perturbation performed.")
+                    # print("No better solution found. Perturbation performed.")
                 else:
                     break
+        # print(best_solution, self.calculate_utility(best_solution))
 
-
-
-        print(best_solution, self.calculate_utility(best_solution))
-
-        return best_solution
+        return best_solution, best_utility
 
 
 
@@ -212,24 +209,6 @@ class LocalSearch_deploy:
                 #assign best solution
 
 
-
-
-
-    def generate_transmission_rate_matrix(self, n, min_rate=5, max_rate=15):
-        transmission_matrix = np.full((n, n), np.inf)
-
-        # 对角线上的元素设为0
-        np.fill_diagonal(transmission_matrix, 0)
-
-        # 随机生成不同device之间的传输速率并保持对称性
-        for i in range(n):
-            for j in range(i + 1, n):
-                rate = np.random.randint(min_rate, max_rate + 1)  # 生成随机速率
-                transmission_matrix[i, j] = rate
-                transmission_matrix[j, i] = rate  # 对称性
-
-        return transmission_matrix
-
     def is_system_consistent(self, system_resources, system_requirements):
         for key, value in system_requirements.items():
             if key not in system_resources:
@@ -264,7 +243,7 @@ class LocalSearch_deploy:
             task_del = self.tasks[task_id]["delay"]
             utility = accuracy - max(0, (delay - task_del)/delay)
             sum_uti += utility
-        cost = sum_uti / len(solution)
+        cost = sum_uti
         return cost
 
 
@@ -306,6 +285,7 @@ class LocalSearch_deploy:
         print("Running Local Search decision maker")
         # self.iterated_local_search(max_iterations=10, max_no_improve=5)
         self.initial_solution()
-        self.tabu_search(self.solution, max_iterations=100, tabu_list_size=20, max_no_improvements=20)
+        best_solution, best_utility = self.tabu_search(self.solution, max_iterations=100, tabu_list_size=20, max_no_improvements=20)
+        return best_solution, best_utility
 
 

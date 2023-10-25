@@ -1,27 +1,26 @@
 import numpy as np
 import math
 
-
 speed_lookup_table = {
-  "joelee0515/firedetection:yolov3-measure-time": {
-    "jetson-nano": 4.364,
-    "raspberrypi-4b": 7.0823,
-    "jetson-xavier": 2.6235
-  },
-  "joelee0515/firedetection:tinyyolov3-measure-time": {
+  0: {
     "jetson-nano": 0.5549,
     "raspberrypi-4b": 1.0702,
     "jetson-xavier": 0.4276
   },
-  "joelee0515/humandetection:yolov3-measure-time": {
-    "jetson-nano": 4.4829,
-    "raspberrypi-4b": 7.2191,
-    "jetson-xavier": 3.8648
-  },
-  "joelee0515/humandetection:tinyyolov3-measure-time": {
+  1: {
+        "jetson-nano": 4.364,
+        "raspberrypi-4b": 7.0823,
+        "jetson-xavier": 2.6235
+    },
+  2: {
     "jetson-nano": 0.5864,
     "raspberrypi-4b": 1.0913,
     "jetson-xavier": 0.4605
+  },
+  3: {
+    "jetson-nano": 4.4829,
+    "raspberrypi-4b": 7.2191,
+    "jetson-xavier": 3.8648
   }
 }
 
@@ -49,27 +48,11 @@ power_lookup_table = {
 }
 
 class TOPSIS_decider:
-    def __init__(self, tasks, devices, operators):
+    def __init__(self, tasks, devices, operators, transmission_matrix):
         self.tasks = tasks
         self.devices = devices
         self.operators = operators
-        self.transmission_matrix = self.generate_transmission_rate_matrix(len(devices))
-
-
-    def generate_transmission_rate_matrix(self, n, min_rate=5, max_rate=15):
-        transmission_matrix = np.full((n, n), np.inf)
-
-        # 对角线上的元素设为正无穷
-        np.fill_diagonal(transmission_matrix, 0)
-
-        # 随机生成不同device之间的传输速率并保持对称性
-        for i in range(n):
-            for j in range(i + 1, n):
-                rate = np.random.randint(min_rate, max_rate + 1)  # 生成随机速率
-                transmission_matrix[i, j] = rate
-                transmission_matrix[j, i] = rate  # 对称性
-
-        return transmission_matrix
+        self.transmission_matrix = transmission_matrix
 
     def is_system_consistent(self, system_resources, system_requirements):
         for key, value in system_requirements.items():
@@ -85,22 +68,37 @@ class TOPSIS_decider:
 
         return True
 
-    def filter_devices(self, operator):
+    def filter_devices(self, operator_id):
         filtered_devices = []
+        operator = self.operators[operator_id]
         for dev in self.devices:
             if self.is_system_consistent(dev["resources"]["system"], operator["requirements"]["system"]):
                 filtered_devices.append(dev)
-        return filtered_devices
+        filtered_device_ids = [d["id"] for d in filtered_devices]
+        return filtered_device_ids
 
-    def calculate_delay(self, operator, source_device_id, device_id):
-        operator_name = operator["name"]
+    def calculate_utility(self, solution):
+        sum_uti = 0
+        for task_id, mapping in enumerate(solution):
+            source_device_id = self.tasks[task_id]["source"]
+            operator_id = mapping[0]
+            device_id = mapping[1]
+            accuracy = self.operators[operator_id]["accuracy"]
+            delay = self.calculate_delay(operator_id, source_device_id, device_id)
+            task_del = self.tasks[task_id]["delay"]
+            utility = accuracy - max(0, (delay - task_del) / delay)
+            sum_uti += utility
+        cost = sum_uti
+        return cost
+
+    def calculate_delay(self, operator_id, source_device_id, device_id):
         device_model = self.devices[device_id]["model"]
         transmission_delay = self.transmission_matrix[source_device_id, device_id]
-        processing_delay = speed_lookup_table[operator_name][device_model]
+        processing_delay = speed_lookup_table[operator_id][device_model]
         return transmission_delay + processing_delay
 
-    def calculate_power(self, operator, device_id):
-        operator_name = operator["name"]
+    def calculate_power(self, operator_id, device_id):
+        operator_name = self.operators[operator_id]["name"]
         device_model = self.devices[device_id]["model"]
         power = power_lookup_table[operator_name][device_model]
         return power
@@ -122,16 +120,15 @@ class TOPSIS_decider:
         decision_matrix = []
         mappings = []
         num_criterias = 3
-        for operator in operator_candidates:
-            filtered_devices = self.filter_devices(operator)
-            for i in range(len(filtered_devices)):
-                device_id = filtered_devices[i]["id"]
-                accuracy = operator["accuracy"]
-                delay = self.calculate_delay(operator, source_device_id, device_id)
-                power = self.calculate_power(operator, device_id)
+        for op_id in operator_candidates:
+            filtered_device_ids = self.filter_devices(op_id)
+            for dev_id in filtered_device_ids:
+                accuracy = self.operators[op_id]["accuracy"]
+                delay = self.calculate_delay(op_id, source_device_id, dev_id)
+                power = self.calculate_power(op_id, dev_id)
                 criteria_list = [accuracy, delay, power]
                 decision_matrix.append(criteria_list)
-                mappings.append([operator["name"], device_id])
+                mappings.append([op_id, dev_id])
 
         decision_matrix_np = np.array(decision_matrix)
         # Calculate the Normalized Decision Matrix (NDM)
@@ -192,16 +189,19 @@ class TOPSIS_decider:
 
     def make_decision(self):
         print("Running TOPSIS decision maker")
+        solution = []
         for task in self.tasks:
             object_code = task["object_code"]
             source_device_id = task["source"]
             operator_candidates = []
             for op in self.operators:
                 if op["object_code"] == object_code:
-                    operator_candidates.append(op)
+                    operator_candidates.append(op["id"])
 
             mapping, RC = self.calculate_rc(source_device_id, operator_candidates)
-            print(mapping, RC)
+            solution.append(mapping)
+        utility = self.calculate_utility(solution)
+        return solution, utility
 
 
 
