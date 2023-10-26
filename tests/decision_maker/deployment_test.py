@@ -185,15 +185,15 @@ tasks = [
         "source": 1,
         "object": "human",
         "object_code": 1,
-        "delay": 10,
+        "delay": 5.5,
         "priority": 10
     },
     {
         "id": 1,
-        "source": 2,
+        "source": 7,
         "object": "fire",
         "object_code": 2,
-        "delay": 10,
+        "delay": 10.5,
         "priority": 5
     },
     {
@@ -201,15 +201,15 @@ tasks = [
         "source": 3,
         "object": "fire",
         "object_code": 2,
-        "delay": 10,
+        "delay": 10.3,
         "priority": 2
     },
     {
         "id": 3,
-        "source": 4,
+        "source": 6,
         "object_code": 2,
         "object": "fire",
-        "delay": 10,
+        "delay": 10.4,
         "priority": 1
     }
 ]
