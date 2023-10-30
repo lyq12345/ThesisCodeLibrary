@@ -83,22 +83,6 @@ class MIP_Decider:
 
         return data
 
-    def generate_transmission_rate_matrix(self, n, min_rate=5, max_rate=15):
-        # 创建一个n*n的矩阵，初始值设为正无穷
-        transmission_matrix = np.full((n, n), np.inf)
-
-        # 对角线上的元素设为正无穷
-        np.fill_diagonal(transmission_matrix, 0)
-
-        # 随机生成不同device之间的传输速率并保持对称性
-        for i in range(n):
-            for j in range(i + 1, n):
-                rate = np.random.randint(min_rate, max_rate + 1)  # 生成随机速率
-                transmission_matrix[i, j] = rate
-                transmission_matrix[j, i] = rate  # 对称性
-
-        return transmission_matrix
-
     def inverse(self, x):
         if x == 0:
             return 0
@@ -144,7 +128,7 @@ class MIP_Decider:
         for j in range(O):
             solver.Add(solver.Sum([x[j, k] for k in range(D)]) <= 1)
 
-        # Each data source transmit to at  most one operator
+        # Each data source transmit to at most one operator
         for i in range(T):
             solver.Add(solver.Sum([y[i, j] for j in range(O)]) <= 1)
 
@@ -173,17 +157,6 @@ class MIP_Decider:
                     utilities.append(z[i, j, k] * self.operator_data["operator_accuracies"][j]
                                      - z[i, j, k] * max((1 - 10 * self.inverse(
                         (self.device_data["transmission_speed"][source_device_id][k] + self.operator_data["processing_speed"][j][k]))), 0))
-
-        # transmission_times = {}
-        # for i in range(D):
-        #     for j in range(O):
-        #         for k in range(D):
-        #             transmission_times[i, j, k] = z[i, j, k]*device_data["transmission_speed"][i][k]
-
-        # for i in range(D):
-        #     for j in range(O):
-        #         for k in range(D):
-        #             utilities.append(z[i, j, k]*accuracy[i, j, k]-z[i, j, k]*transmission_times[i, j, k])
 
         solver.Maximize(solver.Sum(utilities))
 
