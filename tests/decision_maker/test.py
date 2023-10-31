@@ -9,5 +9,6 @@ df = pd.read_csv('results/evaluation.csv')
 绘制分割小提琴以比较跨色调变量
 """
 sns.violinplot(x="group", y="Normalized objective", hue="algorithm",
-               data=df, palette="muted", split=True)
+               data=df, palette="muted", split=True, inner=None, cut=0)
+plt.xticks(rotation=-90)
 plt.show()
