@@ -1,14 +1,21 @@
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
-sns.set(style="whitegrid")
-# 读取数据
+# sns.set(style="whitegrid")
+# # 读取数据
+# df = pd.read_csv('results/evaluation.csv')
+# """
+# 案例4：
+# 绘制分割小提琴以比较跨色调变量
+# """
+# sns.violinplot(x="group", y="Normalized objective", hue="algorithm",
+#                data=df, palette="muted", split=True, inner=None, cut=0)
+# plt.xticks(rotation=-90)
+# plt.show()
+
 df = pd.read_csv('results/evaluation.csv')
-"""
-案例4：
-绘制分割小提琴以比较跨色调变量
-"""
-sns.violinplot(x="group", y="Normalized objective", hue="algorithm",
-               data=df, palette="muted", split=True, inner=None, cut=0)
+filtered_df = df[df['group'].str.contains('k=100')]
+# sns.boxplot(data=filtered_df, x="group", y="Normalized objective", hue="algorithm")
+sns.boxplot(data=filtered_df, x="group", y="time", hue="algorithm")
 plt.xticks(rotation=-90)
 plt.show()

@@ -7,7 +7,7 @@ import argparse
 import pandas as pd
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from greedy_deploy import Greedy_Decider
+from greedy_deploy import Greedy_deploy
 from MIP_deploy import MIP_Decider
 from TOPSIS_deploy import TOPSIS_decider
 from LocalSearch_deploy import LocalSearch_deploy
@@ -227,25 +227,25 @@ def main():
         }
     ]
 
-    num_devices = 30
-    num_requests = 30
-    solver = "LocalSearch"
+    num_devices = 20
+    num_requests = 4
+    solver = "All"
 
-    # 创建一个 ArgumentParser 对象
-    parser = argparse.ArgumentParser(description='示例脚本，演示如何使用 argparse 解析命令行参数.')
-
-    # 添加命令行参数
-    parser.add_argument('-d', '--num_devices' , default=30, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=10,type=float, help='number of requests')
-    parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
-
-    # 解析命令行参数
-    args = parser.parse_args()
-
-    # 访问解析后的参数
-    num_devices = args.num_devices
-    num_requests = args.num_requests
-    solver = args.solver
+    # # 创建一个 ArgumentParser 对象
+    # parser = argparse.ArgumentParser(description='示例脚本，演示如何使用 argparse 解析命令行参数.')
+    #
+    # # 添加命令行参数
+    # parser.add_argument('-d', '--num_devices' , default=30, type=int, help='number of devices')
+    # parser.add_argument('-r', '--num_requests', default=10,type=float, help='number of requests')
+    # parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
+    #
+    # # 解析命令行参数
+    # args = parser.parse_args()
+    #
+    # # 访问解析后的参数
+    # num_devices = args.num_devices
+    # num_requests = args.num_requests
+    # solver = args.solver
 
     # make_decison_from_tasks(tasks)
     device_list = generate_devices(num_devices)
@@ -256,7 +256,8 @@ def main():
 
     if solver == "All":
         make_decision_from_task_new(task_list, device_list, transmission_matrix, "LocalSearch")
-        make_decision_from_task_new(task_list, device_list, transmission_matrix, "TOPSIS")
+        # make_decision_from_task_new(task_list, device_list, transmission_matrix, "TOPSIS")
+        make_decision_from_task_new(task_list, device_list, transmission_matrix, "MIP")
     else:
         make_decision_from_task_new(task_list, device_list, transmission_matrix, solver)
     # make_decision_from_task_new(task_list, device_list, transmission_matrix, "TOPSIS")
@@ -283,6 +284,6 @@ def evaluation_experiments():
     df = pd.DataFrame(data)
     df.to_csv('results/evaluation.csv', index=False)
 if __name__ == '__main__':
-    # main()
-    evaluation_experiments()
+    main()
+    # evaluation_experiments()
 

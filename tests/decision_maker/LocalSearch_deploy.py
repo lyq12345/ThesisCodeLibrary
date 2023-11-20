@@ -2,6 +2,7 @@ import numpy as np
 import math
 import copy
 import random
+from TOPSIS_deploy import TOPSIS_decider
 
 
 speed_lookup_table = {
@@ -70,15 +71,19 @@ class LocalSearch_deploy:
 
 
     def initial_solution(self):
-        devices_copy = copy.deepcopy(self.devices)
-        for task in self.tasks:
-            task_id = task["id"]
-            candidate_op_ids = self.get_candidate_operators(task)
-            selected_op_id = random.choice(candidate_op_ids)
-            candidate_device_ids = self.filter_devices(devices_copy, selected_op_id)
-            selected_device_id = random.choice(candidate_device_ids)
-            self.deploy(devices_copy, (selected_op_id, selected_device_id))
-            self.solution[task_id] = (selected_op_id, selected_device_id)
+        # devices_copy = copy.deepcopy(self.devices)
+        # for task in self.tasks:
+        #     task_id = task["id"]
+        #     candidate_op_ids = self.get_candidate_operators(task)
+        #     selected_op_id = random.choice(candidate_op_ids)
+        #     candidate_device_ids = self.filter_devices(devices_copy, selected_op_id)
+        #     selected_device_id = random.choice(candidate_device_ids)
+        #     self.deploy(devices_copy, (selected_op_id, selected_device_id))
+        #     self.solution[task_id] = (selected_op_id, selected_device_id)
+
+        topsis_decider = TOPSIS_decider(self.tasks, self.devices, self.operators, self.transmission_matrix)
+        init_solution, init_utility = topsis_decider.make_decision()
+        self.solution = init_solution
 
 
     def perturbation(self, current_solution):
