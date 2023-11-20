@@ -110,11 +110,6 @@ class LocalSearch_deploy:
         new_solution[swap_id1], new_solution[swap_id2] = new_solution[swap_id2], new_solution[swap_id1]
         return new_solution
 
-
-
-
-
-
     def get_neighbors(self, current_solution, tabu_list):
         # moving one operator to another device; change to another operator
         device_copy = copy.deepcopy(self.devices)
@@ -176,10 +171,6 @@ class LocalSearch_deploy:
 
         return best_solution, best_utility
 
-
-
-
-
     def local_search(self, current_solution, tabu_list):
         neighbors = self.get_neighbors(current_solution, tabu_list)
         best_neighbor = None
@@ -195,23 +186,12 @@ class LocalSearch_deploy:
 
         return best_neighbor
 
-
-
-
-
     def iterated_local_search(self, max_iterations, max_no_improve):
         # get initial solution
         self.initial_solution()
         # calculate the cost for initial solutio
         initial_cost = self.calculate_utility(self.solution)
         self.get_neighbors(self.solution)
-
-        # for i in range(max_iterations):
-        #     # perturbation
-        #     self.local_search()
-
-            # if find a better solution
-                #assign best solution
 
 
     def is_system_consistent(self, system_resources, system_requirements):
@@ -290,7 +270,7 @@ class LocalSearch_deploy:
         print("Running Local Search decision maker")
         # self.iterated_local_search(max_iterations=10, max_no_improve=5)
         self.initial_solution()
-        best_solution, best_utility = self.tabu_search(self.solution, max_iterations=100, tabu_list_size=20, max_no_improvements=20)
+        best_solution, best_utility = self.tabu_search(self.solution, max_iterations=100, tabu_list_size=20, max_no_improvements=30)
         return best_solution, best_utility
 
 

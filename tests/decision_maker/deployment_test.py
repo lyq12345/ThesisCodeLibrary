@@ -7,7 +7,7 @@ import argparse
 import pandas as pd
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from greedy_deploy import Greedy_deploy
+# from greedy_deploy import Greedy_Decider
 from MIP_deploy import MIP_Decider
 from TOPSIS_deploy import TOPSIS_decider
 from LocalSearch_deploy import LocalSearch_deploy
@@ -40,7 +40,7 @@ speed_lookup_table = {
   }
 }
 
-data = {'group':[], 'Objective':[],'Normalized objective':[], 'time':[], 'algorithm': []}
+data = {'group':[], 'Objective':[],'Normalized objective':[], 'time':[], 'algorithm': [], "avg_accuracy": [], "avg_delay": [], "avg_cpu_consumption": [], "avg_memory_consumption": [],"power_consumption": []}
 
 power_lookup_table = {
   "joelee0515/firedetection:yolov3-measure-time": {
@@ -92,52 +92,12 @@ def generate_transmission_rate_matrix(n, min_rate=5, max_rate=15):
 
     return transmission_matrix
 
-def make_decison_from_tasks(task_list):
-    device_file = os.path.join(cur_dir, "../status_tracker/devices.json")
-    operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
-    source_file = os.path.join(cur_dir, "../status_tracker/sources.json")
-
-    device_list = read_json(device_file)
-    operator_list = read_json(operator_file)
-    source_dict = read_json(source_file)
-
-    operator_pairs = []
-
-    decision_maker = Greedy_Decider()
-
-
-    for task in sorted(task_list, key=lambda x: x["priority"], reverse=True):
-        # query for operator
-        selected_sop = {}
-        selected_pop = {}
-
-        pop_candidates = []
-
-        source_id = task["source"]
-        model = source_dict[source_id]
-        object = task['object']
-
-        # query for operator
-        for op in operator_list:
-            if op["type"] == "source" and op["sensor"] == model:
-                selected_sop = op
-
-            if op["type"] == "processing" and op["object"] == object:
-                pop_candidates.append(op)
-
-        # greedly look for the most accurate operator that is within the delay tolerance
-        selected_pop = choose_best_operator(pop_candidates)
-
-        operator_pairs.append({"source": selected_sop, "processing": selected_pop})
-
-    solution = decision_maker.match_operators_with_devices(operator_pairs, device_list)
-
 def make_decision_from_task_new(task_list, device_list, transmission_matrix, solver="LocalSearch", display=True, record=False):
     operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
     operator_list = read_json(operator_file)
 
     def calculate_accuracy(operator_id):
-        return  operator_list[operator_id]["accuracy"]
+        return operator_list[operator_id]["accuracy"]
 
     def calculate_delay(operator_id, source_device_id, device_id):
         device_model = device_list[device_id]["model"]
@@ -150,6 +110,22 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
         device_model = device_list[device_id]["model"]
         power = power_lookup_table[operator_name][device_model]
         return power
+
+    def calculate_resource_consumption(solution):
+        cpu_consumptions = [0]*len(device_list)
+        ram_consumptions = [0]*len(device_list)
+        for i, mapping in enumerate(solution):
+            op_id = mapping[0]
+            dev_id = mapping[1]
+            op_resource = operator_list[op_id]["requirements"]["system"]
+            cpu_consumptions[dev_id] += op_resource["cpu"]
+            ram_consumptions[dev_id] += op_resource["memory"]
+        for i in range(len(cpu_consumptions)):
+            cpu_consumptions[i] = cpu_consumptions[i] / device_list[i]["resources"]["system"]["cpu"]
+            ram_consumptions[i] = ram_consumptions[i] / device_list[i]["resources"]["system"]["memory"]
+        avg_cpu_consumption = sum(cpu_consumptions)/len(cpu_consumptions)
+        avg_ram_consumption = sum(ram_consumptions)/len(ram_consumptions)
+        return avg_cpu_consumption, avg_ram_consumption
 
 
     # decision_maker = MIP_Decider(task_list, device_list, operator_list)
@@ -185,104 +161,90 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
         print(f"Objective: {utility}")
     if record:
         nol_objective = utility / len(task_list)
-        data['group'].append(f"i={len(task_list)} k={len(device_list)}")
+        # data['group'].append(f"i={len(task_list)} k={len(device_list)}")
+        data['group'].append(len(task_list))
         data['Objective'].append(utility)
         data['Normalized objective'].append(nol_objective)
         data['time'].append(elapsed_time)
         data['algorithm'].append(solver)
+        acc_sum = 0.0
+        delay_sum = 0.0
+        power_sum = 0.0
+
+        for i, mapping in enumerate(solution):
+            source_device_id = task_list[i]["source"]
+            op_id = mapping[0]
+            dev_id = mapping[1]
+            acc_sum += calculate_accuracy(op_id)
+            delay_sum += calculate_delay(op_id, source_device_id, dev_id)
+            power_sum += calculate_power(op_id, dev_id)
+        avg_acc = acc_sum / len(task_list)
+        avg_delay = delay_sum / len(task_list)
+        avg_cpu_consumption, avg_ram_consumption = calculate_resource_consumption(solution)
+        data["avg_accuracy"].append(avg_acc)
+        data["avg_delay"].append(avg_delay)
+        data["power_consumption"].append(power_sum)
+        data["avg_cpu_consumption"].append(avg_cpu_consumption)
+        data["avg_memory_consumption"].append(avg_ram_consumption)
 
 def main():
-    tasks = [
-        {
-            "id": 0,
-            "source": 1,
-            "object": "human",
-            "object_code": 1,
-            "delay": 5.5,
-            "priority": 10
-        },
-        {
-            "id": 1,
-            "source": 7,
-            "object": "fire",
-            "object_code": 2,
-            "delay": 10.5,
-            "priority": 5
-        },
-        {
-            "id": 2,
-            "source": 3,
-            "object": "fire",
-            "object_code": 2,
-            "delay": 10.3,
-            "priority": 2
-        },
-        {
-            "id": 3,
-            "source": 6,
-            "object_code": 2,
-            "object": "fire",
-            "delay": 10.4,
-            "priority": 1
-        }
-    ]
+    num_devices = 30
+    num_requests = 30
+    solver = "LocalSearch"
 
-    num_devices = 20
-    num_requests = 4
-    solver = "All"
+    # 创建一个 ArgumentParser 对象
+    parser = argparse.ArgumentParser(description='示例脚本，演示如何使用 argparse 解析命令行参数.')
 
-    # # 创建一个 ArgumentParser 对象
-    # parser = argparse.ArgumentParser(description='示例脚本，演示如何使用 argparse 解析命令行参数.')
-    #
-    # # 添加命令行参数
-    # parser.add_argument('-d', '--num_devices' , default=30, type=int, help='number of devices')
-    # parser.add_argument('-r', '--num_requests', default=10,type=float, help='number of requests')
-    # parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
-    #
-    # # 解析命令行参数
-    # args = parser.parse_args()
-    #
-    # # 访问解析后的参数
-    # num_devices = args.num_devices
-    # num_requests = args.num_requests
-    # solver = args.solver
+    # 添加命令行参数
+    parser.add_argument('-d', '--num_devices', default=30, type=int, help='number of devices')
+    parser.add_argument('-r', '--num_requests', default=10,type=float, help='number of requests')
+    parser.add_argument('-s', '--solver', type=str, default='LocalSearch', help='solver name')
 
-    # make_decison_from_tasks(tasks)
+    # 解析命令行参数
+    args = parser.parse_args()
+
+    # 访问解析后的参数
+    num_devices = args.num_devices
+    num_requests = args.num_requests
+    solver = args.solver
+
     device_list = generate_devices(num_devices)
-    # for dev in device_list:
-    #     print(dev["model"])
     task_list = generate_tasks(num_requests, device_list)
     transmission_matrix = generate_transmission_rate_matrix(len(device_list))
 
     if solver == "All":
         make_decision_from_task_new(task_list, device_list, transmission_matrix, "LocalSearch")
-        # make_decision_from_task_new(task_list, device_list, transmission_matrix, "TOPSIS")
-        make_decision_from_task_new(task_list, device_list, transmission_matrix, "MIP")
+        make_decision_from_task_new(task_list, device_list, transmission_matrix, "TOPSIS")
     else:
         make_decision_from_task_new(task_list, device_list, transmission_matrix, solver)
     # make_decision_from_task_new(task_list, device_list, transmission_matrix, "TOPSIS")
     # make_decision_from_task_new(task_list, device_list, transmission_matrix, "MIP")
 
 def evaluation_experiments():
-    num_devices = [5, 10, 20, 30, 40, 50, 100]
-    num_requests = [5, 10, 20, 30, 40, 50, 100]
-    measure_times = 50
-    solvers = ["TOPSIS", "LocalSearch"]
+    # num_devices = [5, 10, 20, 30, 40, 50, 100]
+    # num_requests = [5, 10, 20, 30, 40, 50, 100]
+    num_devices = [20]
+    num_requests = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    measure_times = 1
+    solvers = ["TOPSIS", "LocalSearch", "MIP"]
 
     for i, device_num in enumerate(num_devices):
-        for j in range(i + 1):
+        # for j in range(i + 1):
+        for j in range(len(num_requests)):
             for t in range(measure_times):
                 request_num = num_requests[j]
                 device_list = generate_devices(device_num)
                 task_list = generate_tasks(request_num, device_list)
                 transmission_matrix = generate_transmission_rate_matrix(len(device_list))
                 for solver in solvers:
+                    if request_num > 6 and solver == "MIP":
+                        continue
                     print(f"Running i={request_num} k={device_num}, solver={solver}, iteration {t}")
                     make_decision_from_task_new(task_list, device_list, transmission_matrix, solver, display=False, record=True)
 
     # record finishes, save into csv
     df = pd.DataFrame(data)
-    df.to_csv('results/evaluation.csv', index=False)
+    df.to_csv('results/evaluation_4.csv', index=False)
 if __name__ == '__main__':
     main()
     # evaluation_experiments()

@@ -56,7 +56,6 @@ class Greedy_deploy:
         self.devices = devices
         self.operators = operators
         self.transmission_matrix = transmission_matrix
-
         self.solution = [None]*len(tasks)
 
     def get_candidate_operators(self, task):
@@ -104,11 +103,6 @@ class Greedy_deploy:
         swap_id1, swap_id2 = random.sample(task_ids, 2)
         new_solution[swap_id1], new_solution[swap_id2] = new_solution[swap_id2], new_solution[swap_id1]
         return new_solution
-
-
-
-
-
 
     def get_neighbors(self, current_solution, tabu_list):
         # moving one operator to another device; change to another operator
