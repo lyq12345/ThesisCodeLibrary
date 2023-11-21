@@ -82,7 +82,7 @@ class LocalSearch_deploy:
         #     self.solution[task_id] = (selected_op_id, selected_device_id)
 
         topsis_decider = TOPSIS_decider(self.tasks, self.devices, self.operators, self.transmission_matrix)
-        init_solution, init_utility = topsis_decider.make_decision()
+        init_solution, init_utility = topsis_decider.make_decision(display=False)
         self.solution = init_solution
 
 
@@ -136,7 +136,6 @@ class LocalSearch_deploy:
                     neighbor[i] = (op_id, dev_id)
                     if neighbor not in tabu_list:
                         neighbors.append(neighbor)
-                    # print(neighbor)
         return neighbors
 
     def tabu_search(self, initial_solution, max_iterations, tabu_list_size, max_no_improvements):

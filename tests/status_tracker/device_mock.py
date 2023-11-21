@@ -64,7 +64,7 @@ sensor_model = [
         {
           "id": 1,
           "sensor": "IMX519",
-            "speed": 0.4830,
+            "rate": 0.4830,
             "size": 1200
         }
     ]
@@ -87,6 +87,8 @@ def create_from_model(id, model, sensor, power):
     if sensor:
         device_data["resources"]["hardware"] = sensor_model
         device_data["resources"]["hardware"][0]["id"] = id
+    else:
+        device_data["resources"]["hardware"] = []
     if power:
         device_data["power"] = float('inf')
     else:
@@ -96,7 +98,7 @@ def create_from_model(id, model, sensor, power):
 def generate_devices(num_devices):
     device_list = []
     options = ["raspberrypi-4b", "jetson-nano", "jetson-xavier"]
-    weights = [0.7, 0.2, 0.1]  # 每个选项的出现概率
+    weights = [0.7, 0.2, 0.1]  # prob for each model
     for id in range(num_devices):
         model = random.choices(options, weights, k=1)[0]
         # sensor = random.choice([True, False])

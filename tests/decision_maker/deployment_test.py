@@ -78,16 +78,16 @@ def choose_best_operator(operator_candidates):
     return max_speed_op
 
 
-def generate_transmission_rate_matrix(n, min_rate=5, max_rate=15):
+def generate_transmission_rate_matrix(n, min_rate=1, max_rate=5):
     transmission_matrix = np.full((n, n), np.inf)
 
-    # 对角线上的元素设为0
+    # diagnose to zero
     np.fill_diagonal(transmission_matrix, 0)
 
-    # 随机生成不同device之间的传输速率并保持对称性
+    # get random link rates between pairs
     for i in range(n):
         for j in range(i + 1, n):
-            rate = np.random.randint(min_rate, max_rate + 1)  # 生成随机速率
+            rate = np.random.randint(min_rate, max_rate + 1)
             transmission_matrix[i, j] = rate
             transmission_matrix[j, i] = rate  # 对称性
 
@@ -201,7 +201,7 @@ def main():
     # 添加命令行参数
     parser.add_argument('-d', '--num_devices', default=30, type=int, help='number of devices')
     parser.add_argument('-r', '--num_requests', default=20,type=float, help='number of requests')
-    parser.add_argument('-s', '--solver', type=str, default='ORTools', help='solver name')
+    parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
 
     # 解析命令行参数
     args = parser.parse_args()
@@ -217,7 +217,7 @@ def main():
 
     if solver == "All":
         make_decision_from_task_new(task_list, device_list, transmission_matrix, "LocalSearch")
-        make_decision_from_task_new(task_list, device_list, transmission_matrix, "TOPSIS")
+        make_decision_from_task_new(task_list, device_list, transmission_matrix, "ORTools")
     else:
         make_decision_from_task_new(task_list, device_list, transmission_matrix, solver)
     # make_decision_from_task_new(task_list, device_list, transmission_matrix, "TOPSIS")

@@ -187,8 +187,9 @@ class TOPSIS_decider:
         return mappings[selected_mapping_id], max_rc
 
 
-    def make_decision(self):
-        print("Running TOPSIS decision maker")
+    def make_decision(self, display=True):
+        if display:
+            print("Running TOPSIS decision maker")
         solution = []
         for task in self.tasks:
             object_code = task["object_code"]
