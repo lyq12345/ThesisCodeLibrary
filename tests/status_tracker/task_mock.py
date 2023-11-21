@@ -16,7 +16,7 @@ def generate_tasks(num_tasks, device_list):
     for sensor in random_selection:
         object = random.choice(["human", "fire"])
         object_code = object_dict[object]
-        delay = random.uniform(5.0, 10.0)
+        delay = random.uniform(1.0, 6.0)
         # print(delay)
         data = {"id": count, "source": sensor, "object": object, "object_code": object_code, "delay": delay, "priority": 10}
         count += 1

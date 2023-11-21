@@ -11,6 +11,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from MIP_deploy import MIP_Decider
 from TOPSIS_deploy import TOPSIS_decider
 from LocalSearch_deploy import LocalSearch_deploy
+from ORTools_deploy import ORTools_Decider
 
 from status_tracker.task_mock import generate_tasks
 from status_tracker.device_mock import generate_devices
@@ -136,6 +137,8 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
         decision_maker = LocalSearch_deploy(task_list, device_list, operator_list, transmission_matrix)
     elif solver == "MIP":
         decision_maker = MIP_Decider(task_list, device_list, operator_list, transmission_matrix)
+    elif solver == "ORTools":
+        decision_maker = ORTools_Decider(task_list, device_list, operator_list, transmission_matrix)
     start_time = time.time()
     solution, utility = decision_maker.make_decision()
     end_time = time.time()
@@ -189,7 +192,7 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
 
 def main():
     num_devices = 30
-    num_requests = 30
+    num_requests = 6
     solver = "LocalSearch"
 
     # 创建一个 ArgumentParser 对象
@@ -197,8 +200,8 @@ def main():
 
     # 添加命令行参数
     parser.add_argument('-d', '--num_devices', default=30, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=10,type=float, help='number of requests')
-    parser.add_argument('-s', '--solver', type=str, default='LocalSearch', help='solver name')
+    parser.add_argument('-r', '--num_requests', default=20,type=float, help='number of requests')
+    parser.add_argument('-s', '--solver', type=str, default='ORTools', help='solver name')
 
     # 解析命令行参数
     args = parser.parse_args()
