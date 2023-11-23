@@ -69,7 +69,6 @@ class LocalSearch_deploy:
         candidate_op_ids = [d["id"] for d in candidate_operators]
         return candidate_op_ids
 
-
     def initial_solution(self):
         # devices_copy = copy.deepcopy(self.devices)
         # for task in self.tasks:
@@ -130,7 +129,7 @@ class LocalSearch_deploy:
                 # move operator to a different device
                 filtered_devices = self.filter_devices(device_copy, op_id)
                 for dev_id in filtered_devices:
-                    if op_id == mapping[0] and dev_id==mapping[1]:
+                    if op_id == mapping[0] and dev_id == mapping[1]:
                         continue
                     neighbor = current_solution[:]
                     neighbor[i] = (op_id, dev_id)
@@ -146,17 +145,18 @@ class LocalSearch_deploy:
         count = 0
 
         for i in range(max_iterations):
-
             current_solution = self.local_search(current_solution, tabu_list)
             current_utility = self.calculate_utility(current_solution)
 
             # if there's improvements
             if current_utility > best_utility:
+                print(f"utility from {best_utility} -> {current_utility}")
                 best_solution = current_solution
                 best_utility = current_utility
                 tabu_list.append(current_solution)
                 if len(tabu_list) > tabu_list_size:
                     tabu_list.pop(0)
+                count = 0
                 # print(f"best solution after iteration {i}: {best_utility}")
             else:
                 if count <= max_no_improvements:
@@ -185,14 +185,6 @@ class LocalSearch_deploy:
 
         return best_neighbor
 
-    def iterated_local_search(self, max_iterations, max_no_improve):
-        # get initial solution
-        self.initial_solution()
-        # calculate the cost for initial solutio
-        initial_cost = self.calculate_utility(self.solution)
-        self.get_neighbors(self.solution)
-
-
     def is_system_consistent(self, system_resources, system_requirements):
         for key, value in system_requirements.items():
             if key not in system_resources:
@@ -206,6 +198,12 @@ class LocalSearch_deploy:
                         return False
 
         return True
+
+    def solution_feasible(self, solution):
+        for mapping in solution:
+            op_id = mapping[0]
+            dev_id = mapping[1]
+
 
     def filter_devices(self, devices, operator_id):
         filtered_devices = []

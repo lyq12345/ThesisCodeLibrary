@@ -173,7 +173,7 @@ class ORTools_Decider:
                        self.device_data["resource_capability"][k][t])
 
         # operator rate sum should not exceed operator processing rate
-        for j in range(D):
+        for j in range(O):
             # find all sources (i) that transmit to j
             sum_j = []
             processing_rate = 0

@@ -23,7 +23,7 @@ def generate_tasks(num_tasks, device_list):
         # print(delay)
         rate = device_list[sensor_id]["resources"]["hardware"][0]["rate"]
         size = device_list[sensor_id]["resources"]["hardware"][0]["size"]
-        data = {"id": count, "source": sensor_id, "rate": rate, size: size, "object": object, "object_code": object_code, "delay": delay, "priority": 10}
+        data = {"id": count, "source": sensor_id, "rate": rate, "size": size, "object": object, "object_code": object_code, "delay": delay, "priority": 10}
         count += 1
         task_list.append(data)
 

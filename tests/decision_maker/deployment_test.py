@@ -5,6 +5,7 @@ import numpy as np
 import sys
 import argparse
 import pandas as pd
+import random
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 # from greedy_deploy import Greedy_Decider
@@ -12,6 +13,7 @@ from MIP_deploy import MIP_Decider
 from TOPSIS_deploy import TOPSIS_decider
 from LocalSearch_deploy import LocalSearch_deploy
 from ORTools_deploy import ORTools_Decider
+from examples.testcases import generate_testcase
 
 from status_tracker.task_mock import generate_tasks
 from status_tracker.device_mock import generate_devices
@@ -87,7 +89,7 @@ def generate_transmission_rate_matrix(n, min_rate=1, max_rate=5):
     # get random link rates between pairs
     for i in range(n):
         for j in range(i + 1, n):
-            rate = np.random.randint(min_rate, max_rate + 1)
+            rate = random.uniform(min_rate, max_rate)
             transmission_matrix[i, j] = rate
             transmission_matrix[j, i] = rate  # 对称性
 
@@ -105,6 +107,13 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
         transmission_delay = transmission_matrix[source_device_id, device_id]
         processing_delay = speed_lookup_table[operator_id][device_model]
         return transmission_delay + processing_delay
+
+    def calculate_objective(op_id, source_device_id, device_id, task_delay):
+        acc = calculate_accuracy(op_id)
+        delay = calculate_delay(op_id, source_device_id, dev_id)
+        objective = acc - max(0, (delay - task_delay)/delay)
+        return objective
+
 
     def calculate_power(operator_id, device_id):
         operator_name = operator_list[operator_id]["name"]
@@ -127,6 +136,7 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
         avg_cpu_consumption = sum(cpu_consumptions)/len(cpu_consumptions)
         avg_ram_consumption = sum(ram_consumptions)/len(ram_consumptions)
         return avg_cpu_consumption, avg_ram_consumption
+
 
 
     # decision_maker = MIP_Decider(task_list, device_list, operator_list)
@@ -155,13 +165,14 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
             performance_acc = calculate_accuracy(op_id)
             performance_delay = calculate_delay(op_id, source_device_id, dev_id)
             performance_power = calculate_power(op_id, dev_id)
+            performance_objective = calculate_objective(op_id, source_device_id, dev_id, task_delay)
             print(f"Data flow {i}:")
             print(f"Request: source: {source_device_id} object: {task_object}, delay tolerance: {task_delay}")
             print(f"Deployment: {op_name} -> device {dev_id}")
-            print(f"Performance: accuracy: {performance_acc}, delay: {performance_delay}, power: {performance_power}")
+            print(f"Performance: accuracy: {performance_acc}, delay: {performance_delay}, power: {performance_power}, objective: {performance_objective}")
             print("--------------------------------------------------------------")
         print(f"Decision making time: {elapsed_time} s")
-        print(f"Objective: {utility}")
+        print(f"Overall Objective: {utility}")
     if record:
         nol_objective = utility / len(task_list)
         # data['group'].append(f"i={len(task_list)} k={len(device_list)}")
@@ -191,7 +202,7 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
         data["avg_memory_consumption"].append(avg_ram_consumption)
 
 def main():
-    num_devices = 30
+    num_devices = 20
     num_requests = 6
     solver = "LocalSearch"
 
@@ -200,8 +211,8 @@ def main():
 
     # 添加命令行参数
     parser.add_argument('-d', '--num_devices', default=30, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=20,type=float, help='number of requests')
-    parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
+    parser.add_argument('-r', '--num_requests', default=10, type=float, help='number of requests')
+    parser.add_argument('-s', '--solver', type=str, default='LocalSearch', help='solver name')
 
     # 解析命令行参数
     args = parser.parse_args()
@@ -214,6 +225,8 @@ def main():
     device_list = generate_devices(num_devices)
     task_list = generate_tasks(num_requests, device_list)
     transmission_matrix = generate_transmission_rate_matrix(len(device_list))
+    # device_list, task_list, transmission_matrix = generate_testcase()
+
 
     if solver == "All":
         make_decision_from_task_new(task_list, device_list, transmission_matrix, "LocalSearch")
