@@ -212,7 +212,7 @@ def main():
     # 添加命令行参数
     parser.add_argument('-d', '--num_devices', default=30, type=int, help='number of devices')
     parser.add_argument('-r', '--num_requests', default=10, type=float, help='number of requests')
-    parser.add_argument('-s', '--solver', type=str, default='LocalSearch', help='solver name')
+    parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
 
     # 解析命令行参数
     args = parser.parse_args()
@@ -231,6 +231,7 @@ def main():
     if solver == "All":
         make_decision_from_task_new(task_list, device_list, transmission_matrix, "LocalSearch")
         make_decision_from_task_new(task_list, device_list, transmission_matrix, "ORTools")
+        # make_decision_from_task_new(task_list, device_list, transmission_matrix, "MIP")
     else:
         make_decision_from_task_new(task_list, device_list, transmission_matrix, solver)
     # make_decision_from_task_new(task_list, device_list, transmission_matrix, "TOPSIS")

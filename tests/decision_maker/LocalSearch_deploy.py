@@ -88,6 +88,7 @@ class LocalSearch_deploy:
     def perturbation(self, current_solution):
         # randomly swap two task assignments of the same type
         # categorize tasks with the same object type
+        # it should be reasonable before swap!
         type_dict = {}
 
         for i, mapping in enumerate(current_solution):
@@ -107,6 +108,9 @@ class LocalSearch_deploy:
         task_ids = type_dict[selected_group]
         swap_id1, swap_id2 = random.sample(task_ids, 2)
         new_solution[swap_id1], new_solution[swap_id2] = new_solution[swap_id2], new_solution[swap_id1]
+
+        if not self.solution_feasible(new_solution):
+            return current_solution
         return new_solution
 
     def get_neighbors(self, current_solution, tabu_list):
@@ -135,6 +139,8 @@ class LocalSearch_deploy:
                     neighbor[i] = (op_id, dev_id)
                     if neighbor not in tabu_list:
                         neighbors.append(neighbor)
+            # deploy back!
+            self.deploy(device_copy, mapping)
         return neighbors
 
     def tabu_search(self, initial_solution, max_iterations, tabu_list_size, max_no_improvements):
@@ -150,7 +156,7 @@ class LocalSearch_deploy:
 
             # if there's improvements
             if current_utility > best_utility:
-                print(f"utility from {best_utility} -> {current_utility}")
+                # print(f"utility from {best_utility} -> {current_utility}")
                 best_solution = current_solution
                 best_utility = current_utility
                 tabu_list.append(current_solution)
@@ -200,9 +206,17 @@ class LocalSearch_deploy:
         return True
 
     def solution_feasible(self, solution):
+        device_copy = copy.deepcopy(self.devices)
         for mapping in solution:
             op_id = mapping[0]
             dev_id = mapping[1]
+            resources = device_copy[dev_id]["resources"]["system"]
+            requirements = self.operators[op_id]["requirements"]["system"]
+            if not self.is_system_consistent(resources, requirements):
+                return False
+            else:
+                self.deploy(device_copy, mapping)
+        return True
 
 
     def filter_devices(self, devices, operator_id):

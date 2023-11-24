@@ -173,18 +173,19 @@ class ORTools_Decider:
                        self.device_data["resource_capability"][k][t])
 
         # operator rate sum should not exceed operator processing rate
-        for j in range(O):
-            # find all sources (i) that transmit to j
-            sum_j = []
-            processing_rate = 0
-            for i in range(T):
-                for k in range(D):
-                    rate = self.tasks[i]["rate"]
-                    dev_name = self.device_data["device_models"][k]
-                    op_id = self.operator_data["operator_ids"][j]
-                    processing_rate += x[i,j,k] * (1 / speed_lookup_table[op_id][dev_name])
-                    sum_j.append(x[i,j,k] * rate)
-            solver.Add(solver.Sum(sum_j) <= processing_rate)
+        # for j in range(O):
+        #     # find all sources (i) that transmit to j
+        #     sum_j = []
+        #     processing_rate = 0
+        #     for i in range(T):
+        #         for k in range(D):
+        #             rate = self.tasks[i]["rate"]
+        #             dev_name = self.device_data["device_models"][k]
+        #             op_id = self.operator_data["operator_ids"][j]
+        #             processing_rate += x[i,j,k] * (1 / speed_lookup_table[op_id][dev_name])
+        #             sum_j.append(x[i,j,k] * rate)
+        #     solver.Add(solver.Sum(sum_j) <= processing_rate)
+
         utilities = []
         for i in range(T):
             for j in range(O):
