@@ -73,12 +73,9 @@ def read_json(filename):
         data = json.load(json_file)
     return data
 
-
-
 def choose_best_operator(operator_candidates):
     max_speed_op = max(operator_candidates, key=lambda x: x["speed"])
     return max_speed_op
-
 
 def generate_transmission_rate_matrix(n, min_rate=1, max_rate=5):
     transmission_matrix = np.full((n, n), np.inf)
@@ -211,7 +208,7 @@ def main():
 
     # 添加命令行参数
     parser.add_argument('-d', '--num_devices', default=30, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=10, type=float, help='number of requests')
+    parser.add_argument('-r', '--num_requests', default=20, type=float, help='number of requests')
     parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
 
     # 解析命令行参数
