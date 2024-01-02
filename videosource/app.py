@@ -5,14 +5,14 @@ import cv2
 # human detection url
 # processing_endpoint = 'http://node6:8848/process_video'
 # processing_endpoint = 'http://localhost:8848/process_video'
-processing_endpoint = 'http://128.200.218.104:8848/process_video'
+processing_endpoint = 'http://128.200.218.111:8848/process_video'
 
 #fire detection url
 # processing_endpoint = 'http://node6:8849/process_video'
 #processing_endpoint = 'http://localhost:8849/process_video'
 
 # 定义发送请求的间隔时间（秒）
-interval = 10
+interval = 1
 camera_index = 0
 cap = cv2.VideoCapture(camera_index)
 
@@ -47,6 +47,8 @@ while True:
 
     _, jpeg_frame = cv2.imencode('.jpg', resized_img, encode_params)
     processing_endpoint = str(processing_endpoint)
+
+    # print("1111")
 
     # send the encoded frame to processors
     try:
