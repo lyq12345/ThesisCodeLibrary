@@ -4,8 +4,8 @@ n = 100
 count = 0
 result = []
 device_name = 'xavier'
-operator_name = 'spare'
-version = 'spare'
+operator_name = 'fire'
+version = 'yolov3-gpu'
 with jtop() as jetson:
     # jetson.ok() will provide the proper update frequency
     while jetson.ok():
@@ -21,5 +21,5 @@ with jtop() as jetson:
 data = {'power(mW)': result}
 df = pd.DataFrame(data)
 
-filename = f"power_measure/power_{device_name}_{operator_name}_{version}.csv"
+filename = f"results/power_{device_name}_{operator_name}_{version}.csv"
 df.to_csv(filename, index=False)
