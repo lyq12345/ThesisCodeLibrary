@@ -8,7 +8,6 @@ import redis
 
 app = Flask(__name__)
 
-
 redis_conn = redis.Redis(host='127.0.0.1', port=6379, password='DSM12345', db=0, decode_responses=True)
 
 # camera index

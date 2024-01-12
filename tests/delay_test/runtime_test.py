@@ -4,11 +4,11 @@ import time
 import pandas as pd
 import sys
 
-# image_path = 'test_fire.jpg'
+# image_path = 'fire.jpg'
 devices_urls = {
-    "pi": "172.31.158.52",
-    "nano": "172.31.249.146",
-    "xaiver": "128.200.218.104"
+    # "pi": "172.31.158.52",
+    # "nano": "172.31.249.146",
+    "xavier": "128.200.218.112"
 }
 
 
@@ -62,7 +62,7 @@ def process_distribution(device, operator, version, epoth):
 
 # def process_average(device, operator):
 #     port = 8848 if operator == "human" else 8849
-#     img_file = "test_human_2.jpeg" if operator == "human" else "test_fire.jpg"
+#     img_file = "test_human_2.jpeg" if operator == "human" else "fire.jpg"
 #     target_url = f"http://{devices_urls[device]}:{port}/process_video"
 #
 #     # read the image

@@ -13,22 +13,29 @@ processing_endpoint = 'http://128.200.218.112:8849/process_video'
 
 # 定义发送请求的间隔时间（秒）
 interval = 1
-camera_index = 0
-cap = cv2.VideoCapture(camera_index)
+# camera_index = 0
+# cap = cv2.VideoCapture(camera_index)
+img_path = "test_imgs/fire.jpg"
+frame = cv2.imread(img_path)
 
 def resize_img(img, new_width):
     aspect_ratio = float(new_width) / img.shape[1]
     new_height = int(img.shape[0] * aspect_ratio)
     resized_image = cv2.resize(img, (new_width, new_height))
-
-
     return resized_image
 
+new_width = 1024
+resized_img = resize_img(frame, new_width)
+
+# lower the quality
+quality = 65  # quality set to 65%
+encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
+
+_, jpeg_frame = cv2.imencode('.jpg', resized_img, encode_params)
+processing_endpoint = str(processing_endpoint)
+
 while True:
-    ret, frame = cap.read()
-    if frame is None:
-        print("None image captured by camera")
-        break
+    # ret, frame = cap.read()
 
     # calculate fps
     # current_time = time.time()
@@ -37,16 +44,6 @@ while True:
     # start_time = current_time
     #
     # fps_text = "FPS: {:.2f}".format(fps)
-
-    new_width = 1024
-    resized_img = resize_img(frame, new_width)
-
-    # lower the quality
-    quality = 65  # quality set to 65%
-    encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
-
-    _, jpeg_frame = cv2.imencode('.jpg', resized_img, encode_params)
-    processing_endpoint = str(processing_endpoint)
 
     # print("1111")
 
@@ -65,4 +62,4 @@ while True:
 
     # 等待指定的时间间隔
     # time.sleep(interval)
-cap.release()
+# cap.release()

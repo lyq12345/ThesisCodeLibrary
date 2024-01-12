@@ -3,7 +3,7 @@ import pandas as pd
 n = 100
 count = 0
 result = []
-device_name = 'nano'
+device_name = 'xavier'
 operator_name = 'spare'
 version = 'spare'
 with jtop() as jetson:
