@@ -3,50 +3,89 @@ import math
 
 speed_lookup_table = {
   0: {
-    "jetson-nano": 0.5549,
-    "raspberrypi-4b": 1.0702,
-    "jetson-xavier": 0.4276
+    "jetson-nano": 0.5520,
+    "raspberrypi-4b": 0.9476,
+    "jetson-xavier": 0.4284
   },
   1: {
-        "jetson-nano": 4.364,
-        "raspberrypi-4b": 7.0823,
-        "jetson-xavier": 2.6235
+        "jetson-nano": 4.3067,
+        "raspberrypi-4b": 6.9829,
+        "jetson-xavier": 2.4311
     },
   2: {
-    "jetson-nano": 0.5864,
-    "raspberrypi-4b": 1.0913,
-    "jetson-xavier": 0.4605
+    "jetson-nano": 0.6125,
+    "raspberrypi-4b": 1.0468,
+    "jetson-xavier": 0.4719
   },
   3: {
-    "jetson-nano": 4.4829,
-    "raspberrypi-4b": 7.2191,
-    "jetson-xavier": 3.8648
-  }
+    "jetson-nano": 4.3765,
+    "raspberrypi-4b": 7.1570,
+    "jetson-xavier": 2.6941
+  },
+  4: {
+    "jetson-nano": 0.3247,
+    "raspberrypi-4b": 1000000,
+    "jetson-xavier": 0.09034
+  },
+  5: {
+    "jetson-nano": 0.6914,
+    "raspberrypi-4b": 1000000,
+    "jetson-xavier": 0.2247
+  },
+  6: {
+    "jetson-nano": 0.2760,
+    "raspberrypi-4b": 1000000,
+    "jetson-xavier": 0.09924
+  },
+  7: {
+    "jetson-nano": 0.7468,
+    "raspberrypi-4b": 1000000,
+    "jetson-xavier": 0.25310
+  },
 }
 
 power_lookup_table = {
-  "joelee0515/firedetection:yolov3-measure-time": {
+  1: {
     "jetson-nano": 2916.43,
     "raspberrypi-4b": 1684.4,
     "jetson-xavier": 1523.94
   },
-  "joelee0515/firedetection:tinyyolov3-measure-time": {
+  0: {
     "jetson-nano": 1584.53,
     "raspberrypi-4b": 1174.39,
     "jetson-xavier": 780.97
   },
-  "joelee0515/humandetection:yolov3-measure-time": {
+  3: {
     "jetson-nano": 2900.08,
     "raspberrypi-4b": 1694.41,
     "jetson-xavier": 1540.61
   },
-  "joelee0515/humandetection:tinyyolov3-measure-time": {
+  2: {
     "jetson-nano": 1191.19,
     "raspberrypi-4b": 1168.31,
     "jetson-xavier": 803.95
+  },
+    4: {
+    "jetson-nano": 4753.59,
+    "raspberrypi-4b": 3442.17,
+    "jetson-xavier": 2342.97
+  },
+5: {
+    "jetson-nano": 8749.29,
+    "raspberrypi-4b": 5053.2,
+    "jetson-xavier": 4571.82
+  },
+6: {
+    "jetson-nano": 3573.57,
+    "raspberrypi-4b": 3504.93,
+    "jetson-xavier": 2411.55
+  },
+7: {
+    "jetson-nano": 8700.24,
+    "raspberrypi-4b": 5083.23,
+    "jetson-xavier": 4261.83
   }
 }
-
 class TOPSIS_decider:
     def __init__(self, tasks, devices, operators, transmission_matrix):
         self.tasks = tasks
@@ -98,9 +137,9 @@ class TOPSIS_decider:
         return transmission_delay + processing_delay
 
     def calculate_power(self, operator_id, device_id):
-        operator_name = self.operators[operator_id]["name"]
+        # operator_name = self.operators[operator_id]["name"]
         device_model = self.devices[device_id]["model"]
-        power = power_lookup_table[operator_name][device_model]
+        power = power_lookup_table[operator_id][device_model]
         return power
 
     def deploy(self, mapping):

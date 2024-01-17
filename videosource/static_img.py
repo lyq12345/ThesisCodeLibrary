@@ -1,11 +1,20 @@
 import time
 import requests
 import cv2
+import sys
 
+host_device = sys.argv[1]
+port_number = sys.argv[2]
+hosts = {
+    'pi': '111',
+    'nano': '128.200.218.98',
+    'xavier': '333'
+}
+host_ip = hosts[host_device]
 # human detection url
 # processing_endpoint = 'http://node6:8848/process_video'
 # processing_endpoint = 'http://localhost:8848/process_video'
-processing_endpoint = 'http://128.200.218.112:8849/process_video'
+processing_endpoint = f'http://{host_ip}:{port_number}/process_video'
 
 #fire detection url
 # processing_endpoint = 'http://node6:8849/process_video'
@@ -51,6 +60,10 @@ while True:
     try:
         response = requests.post(processing_endpoint, data=jpeg_frame.tobytes(),
                                  headers={'Content-Type': 'image/jpeg'})
+        if response.status_code == 200:
+            result = response.json()
+            proc_time = round(float(result['process_time']), 4)
+            print(f"request succeeded, time: {proc_time}")
         response.raise_for_status()
     except requests.exceptions.Timeout:
         print(f'Request to {processing_endpoint} timed out.')

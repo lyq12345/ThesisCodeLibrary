@@ -81,5 +81,85 @@
       },
       "hardware": null
     }
+  },
+   {
+    "id": 4,
+    "name": "joelee0515/firedetection:tinyyolov3-gpu",
+    "type": "processing",
+    "object": "human",
+    "object_code": 1,
+    "version": "yolov3",
+    "accuracy": 0.5,
+    "speed": 1,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 4,
+        "gpu": 1,
+        "storage": 952,
+        "memory": 654
+      },
+      "hardware": null
+    }
+  },
+   {
+    "id": 5,
+    "name": "joelee0515/firedetection:yolov3-gpu",
+    "type": "processing",
+    "object": "human",
+    "object_code": 1,
+    "version": "yolov3",
+    "accuracy": 0.7,
+    "speed": 1,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 4,
+        "gpu": 1,
+        "storage": 952,
+        "memory": 654
+      },
+      "hardware": null
+    }
+  },
+   {
+    "id": 6,
+    "name": "joelee0515/humandetection:tinyyolov3-gpu",
+    "type": "processing",
+    "object": "human",
+    "object_code": 1,
+    "version": "yolov3",
+    "accuracy": 0.5,
+    "speed": 1,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 4,
+        "gpu": 1,
+        "storage": 952,
+        "memory": 654
+      },
+      "hardware": null
+    }
+  },
+   {
+    "id": 7,
+    "name": "joelee0515/humandetection:yolov3-gpu",
+    "type": "processing",
+    "object": "human",
+    "object_code": 1,
+    "version": "yolov3",
+    "accuracy": 0.7,
+    "speed": 1,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 4,
+        "gpu": 1,
+        "storage": 952,
+        "memory": 654
+      },
+      "hardware": null
+    }
   }
 ]

@@ -7,7 +7,7 @@ import sys
 # image_path = 'fire.jpg'
 devices_urls = {
     # "pi": "172.31.158.52",
-    # "nano": "172.31.249.146",
+    "nano": "128.200.218.98",
     "xavier": "128.200.218.112"
 }
 
@@ -52,7 +52,7 @@ def process_distribution(device, operator, version, epoth):
             print(f"round {i + 1} failed，error: {str(e)}")
         # sleep for 2 seconds
         time.sleep(2)
-    save_file = f"results/raw_{device}_{operator}_{version}.csv"
+    save_file = f"results/new_{device}_{operator}_{version}.csv"
     df = pd.DataFrame(data)
     df.to_csv(save_file, index=False)  # 保存到CSV文件
     print("Completed.")

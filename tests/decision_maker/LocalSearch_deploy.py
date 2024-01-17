@@ -7,25 +7,45 @@ from TOPSIS_deploy import TOPSIS_decider
 
 speed_lookup_table = {
   0: {
-    "jetson-nano": 0.5549,
-    "raspberrypi-4b": 1.0702,
-    "jetson-xavier": 0.4276
+    "jetson-nano": 0.5520,
+    "raspberrypi-4b": 0.9476,
+    "jetson-xavier": 0.4284
   },
   1: {
-        "jetson-nano": 4.364,
-        "raspberrypi-4b": 7.0823,
-        "jetson-xavier": 2.6235
+        "jetson-nano": 4.3067,
+        "raspberrypi-4b": 6.9829,
+        "jetson-xavier": 2.4311
     },
   2: {
-    "jetson-nano": 0.5864,
-    "raspberrypi-4b": 1.0913,
-    "jetson-xavier": 0.4605
+    "jetson-nano": 0.6125,
+    "raspberrypi-4b": 1.0468,
+    "jetson-xavier": 0.4719
   },
   3: {
-    "jetson-nano": 4.4829,
-    "raspberrypi-4b": 7.2191,
-    "jetson-xavier": 3.8648
-  }
+    "jetson-nano": 4.3765,
+    "raspberrypi-4b": 7.1570,
+    "jetson-xavier": 2.6941
+  },
+  4: {
+    "jetson-nano": 0.3247,
+    "raspberrypi-4b": 1000000,
+    "jetson-xavier": 0.09034
+  },
+  5: {
+    "jetson-nano": 0.6914,
+    "raspberrypi-4b": 1000000,
+    "jetson-xavier": 0.2247
+  },
+  6: {
+    "jetson-nano": 0.2760,
+    "raspberrypi-4b": 1000000,
+    "jetson-xavier": 0.09924
+  },
+  7: {
+    "jetson-nano": 0.7468,
+    "raspberrypi-4b": 1000000,
+    "jetson-xavier": 0.25310
+  },
 }
 
 power_lookup_table = {
