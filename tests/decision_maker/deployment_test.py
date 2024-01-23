@@ -190,17 +190,25 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
     solution, utility = decision_maker.make_decision()
     end_time = time.time()
     elapsed_time = end_time - start_time
+
+    acc_deviation_sum = 0.0
+    delay_deviation_sum = 0.0
     if display:
         print("Solution: ")
         for i, mapping in enumerate(solution):
             task_object = task_list[i]['object']
             task_delay = task_list[i]['delay']
+            # task_acc = task_list[i]['accuracy']
             source_device_id = task_list[i]["source"]
             op_id = mapping[0]
             op_name = operator_list[op_id]["name"]
             dev_id = mapping[1]
             performance_acc = calculate_accuracy(op_id)
+            # if performance_acc < task_acc:
+            #     acc_deviation_sum += round((task_acc - performance_acc)/task_acc, 2)
             performance_delay = calculate_delay(op_id, source_device_id, dev_id)
+            if performance_delay > task_delay:
+                delay_deviation_sum += round((performance_delay-task_delay)/task_delay, 2)
             performance_power = calculate_power(op_id, dev_id)
             performance_objective = calculate_objective(op_id, source_device_id, dev_id, task_delay)
             print(f"Data flow {i}:")
@@ -209,6 +217,8 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
             print(f"Performance: accuracy: {performance_acc}, delay: {performance_delay}, power: {performance_power}, objective: {performance_objective}")
             print("--------------------------------------------------------------")
         print(f"Decision making time: {elapsed_time} s")
+        # print(f"Accuracy deviation: {acc_deviation_sum / len(task_list)}")
+        print(f"Delay deviation: {delay_deviation_sum / len(task_list)}")
         print(f"Overall Objective: {utility}")
     if record:
         nol_objective = utility / len(task_list)
@@ -245,8 +255,8 @@ def main():
 
     parser = argparse.ArgumentParser(description='示例脚本，演示如何使用 argparse 解析命令行参数.')
 
-    parser.add_argument('-d', '--num_devices', default=100, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=100, type=float, help='number of requests')
+    parser.add_argument('-d', '--num_devices', default=20, type=int, help='number of devices')
+    parser.add_argument('-r', '--num_requests', default=20, type=float, help='number of requests')
     parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
 
     args = parser.parse_args()
@@ -258,6 +268,7 @@ def main():
     device_list = generate_devices(num_devices)
     task_list = generate_tasks(num_requests, device_list)
     transmission_matrix = generate_transmission_rate_matrix(len(device_list))
+    # device_list, task_list, transmission_matrix = generate_testcase()
 
 
     if solver == "All":
@@ -270,10 +281,10 @@ def main():
     # make_decision_from_task_new(task_list, device_list, transmission_matrix, "MIP")
 
 def evaluation_experiments():
-    # num_devices = [5, 10, 20, 30, 40, 50, 100]
-    # num_requests = [5, 10, 20, 30, 40, 50, 100]
-    num_devices = [100]
-    num_requests = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+    num_devices = [20]
+    num_requests = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    # num_devices = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    # num_requests = [10]
     measure_times = 1
     solvers = ["TOPSIS", "LocalSearch", "ORTools"]
 
@@ -286,14 +297,12 @@ def evaluation_experiments():
                 task_list = generate_tasks(request_num, device_list)
                 transmission_matrix = generate_transmission_rate_matrix(len(device_list))
                 for solver in solvers:
-                    # if request_num > 6 and solver == "MIP":
-                    #     continue
                     print(f"Running i={request_num} k={device_num}, solver={solver}, iteration {t}")
                     make_decision_from_task_new(task_list, device_list, transmission_matrix, solver, display=False, record=True)
 
     # record finishes, save into csv
     df = pd.DataFrame(data)
-    df.to_csv('results/evaluation_7.csv', index=False)
+    df.to_csv('results/evaluation_6.csv', index=False)
 if __name__ == '__main__':
     # main()
     evaluation_experiments()
