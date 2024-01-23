@@ -245,8 +245,8 @@ def main():
 
     parser = argparse.ArgumentParser(description='示例脚本，演示如何使用 argparse 解析命令行参数.')
 
-    parser.add_argument('-d', '--num_devices', default=20, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=20, type=float, help='number of requests')
+    parser.add_argument('-d', '--num_devices', default=100, type=int, help='number of devices')
+    parser.add_argument('-r', '--num_requests', default=100, type=float, help='number of requests')
     parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
 
     args = parser.parse_args()
@@ -258,7 +258,6 @@ def main():
     device_list = generate_devices(num_devices)
     task_list = generate_tasks(num_requests, device_list)
     transmission_matrix = generate_transmission_rate_matrix(len(device_list))
-    # device_list, task_list, transmission_matrix = generate_testcase()
 
 
     if solver == "All":
@@ -273,10 +272,10 @@ def main():
 def evaluation_experiments():
     # num_devices = [5, 10, 20, 30, 40, 50, 100]
     # num_requests = [5, 10, 20, 30, 40, 50, 100]
-    num_devices = [20]
-    num_requests = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    num_devices = [100]
+    num_requests = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 30, 40, 50, 60, 70, 80, 90, 100]
     measure_times = 1
-    solvers = ["TOPSIS", "LocalSearch", "MIP"]
+    solvers = ["TOPSIS", "LocalSearch", "ORTools"]
 
     for i, device_num in enumerate(num_devices):
         # for j in range(i + 1):
@@ -287,15 +286,15 @@ def evaluation_experiments():
                 task_list = generate_tasks(request_num, device_list)
                 transmission_matrix = generate_transmission_rate_matrix(len(device_list))
                 for solver in solvers:
-                    if request_num > 6 and solver == "MIP":
-                        continue
+                    # if request_num > 6 and solver == "MIP":
+                    #     continue
                     print(f"Running i={request_num} k={device_num}, solver={solver}, iteration {t}")
                     make_decision_from_task_new(task_list, device_list, transmission_matrix, solver, display=False, record=True)
 
     # record finishes, save into csv
     df = pd.DataFrame(data)
-    df.to_csv('results/evaluation_4.csv', index=False)
+    df.to_csv('results/evaluation_7.csv', index=False)
 if __name__ == '__main__':
-    main()
-    # evaluation_experiments()
+    # main()
+    evaluation_experiments()
 
