@@ -195,13 +195,6 @@ class Greedy_deploy:
         initial_cost = self.calculate_utility(self.solution)
         self.get_neighbors(self.solution)
 
-        # for i in range(max_iterations):
-        #     # perturbation
-        #     self.local_search()
-
-            # if find a better solution
-                #assign best solution
-
 
     def is_system_consistent(self, system_resources, system_requirements):
         for key, value in system_requirements.items():
