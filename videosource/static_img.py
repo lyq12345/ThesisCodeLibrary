@@ -8,8 +8,10 @@ port_number = sys.argv[2]
 hosts = {
     'pi': '111',
     'nano': '128.200.218.98',
-    'xavier': '333'
+    'xavier': '128.200.218.123'
 }
+operator_type = sys.argv[3]
+
 host_ip = hosts[host_device]
 # human detection url
 # processing_endpoint = 'http://node6:8848/process_video'
@@ -24,7 +26,8 @@ processing_endpoint = f'http://{host_ip}:{port_number}/process_video'
 interval = 1
 # camera_index = 0
 # cap = cv2.VideoCapture(camera_index)
-img_path = "test_imgs/fire.jpg"
+# img_path = "test_imgs/fire.jpg"
+img_path = "test_imgs/human.jpeg" if operator_type=="human" else "test_imgs/fire.jpg"
 frame = cv2.imread(img_path)
 
 def resize_img(img, new_width):

@@ -8,9 +8,10 @@ import sys
 devices_urls = {
     # "pi": "172.31.158.52",
     "nano": "128.200.218.98",
-    "xavier": "128.200.218.112"
+    "xavier": "128.200.218.123"
 }
 
+interval = 2
 
 def resize_img(img, new_width):
     aspect_ratio = float(new_width) / img.shape[1]
