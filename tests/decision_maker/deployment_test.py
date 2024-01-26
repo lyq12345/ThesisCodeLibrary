@@ -63,8 +63,8 @@ speed_lookup_table = {
   },
 }
 
-data = {'group':[], 'Objective':[], 'Normalized objective':[], 'time':[], 'algorithm': [], "avg_accuracy": [], "avg_delay": [], "avg_cpu_consumption": [], "avg_memory_consumption": [],"power_consumption": []}
-
+# data = {'group':[], 'Objective':[], 'Normalized objective':[], 'time':[], 'algorithm': [], "avg_accuracy": [], "avg_delay": [], "avg_cpu_consumption": [], "avg_memory_consumption": [],"power_consumption": []}
+data = {'group':[], 'Normalized objective':[], 'time':[], 'algorithm': []}
 power_lookup_table = {
   1: {
     "jetson-nano": 2916.43,
@@ -132,7 +132,7 @@ def generate_transmission_rate_matrix(n, min_rate=1, max_rate=5):
 
     return transmission_matrix
 
-def make_decision_from_task_new(task_list, device_list, transmission_matrix, solver="LocalSearch", display=True, record=False):
+def make_decision_from_task_new(task_list, device_list, transmission_matrix, solver="LocalSearch", display=True, record=False, iterations = 1):
     operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
     operator_list = read_json(operator_file)
 
@@ -174,79 +174,92 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
         avg_ram_consumption = sum(ram_consumptions)/len(ram_consumptions)
         return avg_cpu_consumption, avg_ram_consumption
 
-
-
-    # decision_maker = MIP_Decider(task_list, device_list, operator_list)
     decision_maker = None
     if solver == "TOPSIS":
         decision_maker = TOPSIS_decider(task_list, device_list, operator_list, transmission_matrix)
     elif solver == "LocalSearch":
         decision_maker = LocalSearch_deploy(task_list, device_list, operator_list, transmission_matrix)
-    elif solver == "MIP":
-        decision_maker = MIP_Decider(task_list, device_list, operator_list, transmission_matrix)
     elif solver == "ORTools":
         decision_maker = ORTools_Decider(task_list, device_list, operator_list, transmission_matrix)
-    start_time = time.time()
-    solution, utility = decision_maker.make_decision()
-    end_time = time.time()
-    elapsed_time = end_time - start_time
 
-    acc_deviation_sum = 0.0
-    delay_deviation_sum = 0.0
-    if display:
-        print("Solution: ")
-        for i, mapping in enumerate(solution):
-            task_object = task_list[i]['object']
-            task_delay = task_list[i]['delay']
-            # task_acc = task_list[i]['accuracy']
-            source_device_id = task_list[i]["source"]
-            op_id = mapping[0]
-            op_name = operator_list[op_id]["name"]
-            dev_id = mapping[1]
-            performance_acc = calculate_accuracy(op_id)
-            # if performance_acc < task_acc:
-            #     acc_deviation_sum += round((task_acc - performance_acc)/task_acc, 2)
-            performance_delay = calculate_delay(op_id, source_device_id, dev_id)
-            if performance_delay > task_delay:
-                delay_deviation_sum += round((performance_delay-task_delay)/task_delay, 2)
-            performance_power = calculate_power(op_id, dev_id)
-            performance_objective = calculate_objective(op_id, source_device_id, dev_id, task_delay)
-            print(f"Data flow {i}:")
-            print(f"Request: source: {source_device_id} object: {task_object}, delay tolerance: {task_delay}")
-            print(f"Deployment: {op_name} -> device {dev_id}")
-            print(f"Performance: accuracy: {performance_acc}, delay: {performance_delay}, power: {performance_power}, objective: {performance_objective}")
-            print("--------------------------------------------------------------")
-        print(f"Decision making time: {elapsed_time} s")
-        # print(f"Accuracy deviation: {acc_deviation_sum / len(task_list)}")
-        print(f"Delay deviation: {delay_deviation_sum / len(task_list)}")
-        print(f"Overall Objective: {utility}")
+    sum_elapsed_time = 0.0
+    sum_utility = 0.0
+
+    for i in range(iterations):
+
+        print(f"Running iteration {i+1} ...")
+
+        start_time = time.time()
+        solution, utility = decision_maker.make_decision()
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+
+        sum_elapsed_time += elapsed_time
+        sum_utility += utility
+
+
+        # acc_deviation_sum = 0.0
+        # delay_deviation_sum = 0.0
+        if display:
+            print("Solution: ")
+            for i, mapping in enumerate(solution):
+                task_object = task_list[i]['object']
+                task_delay = task_list[i]['delay']
+                source_device_id = task_list[i]["source"]
+                op_id = mapping[0]
+                op_name = operator_list[op_id]["name"]
+                dev_id = mapping[1]
+                performance_acc = calculate_accuracy(op_id)
+                performance_delay = calculate_delay(op_id, source_device_id, dev_id)
+                # if performance_delay > task_delay:
+                #     delay_deviation_sum += round((performance_delay-task_delay)/task_delay, 2)
+                performance_power = calculate_power(op_id, dev_id)
+                performance_objective = calculate_objective(op_id, source_device_id, dev_id, task_delay)
+                print(f"Data flow {i}:")
+                print(f"Request: source: {source_device_id} object: {task_object}, delay tolerance: {task_delay}")
+                print(f"Deployment: {op_name} -> device {dev_id}")
+                print(f"Performance: accuracy: {performance_acc}, delay: {performance_delay}, power: {performance_power}, objective: {performance_objective}")
+                print("--------------------------------------------------------------")
+            print(f"Decision making time: {elapsed_time} s")
+            # print(f"Accuracy deviation: {acc_deviation_sum / len(task_list)}")
+            # print(f"Delay deviation: {delay_deviation_sum / len(task_list)}")
+            print(f"Overall Objective: {utility}")
+        # if record:
+        #     nol_objective = utility / len(task_list)
+        #     # data['group'].append(f"i={len(task_list)} k={len(device_list)}")
+        #     data['group'].append(len(task_list))
+        #     data['Objective'].append(utility)
+        #     data['Normalized objective'].append(nol_objective)
+        #     data['time'].append(elapsed_time)
+        #     data['algorithm'].append(solver)
+        #     acc_sum = 0.0
+        #     delay_sum = 0.0
+        #     power_sum = 0.0
+        #
+        #     for i, mapping in enumerate(solution):
+        #         source_device_id = task_list[i]["source"]
+        #         op_id = mapping[0]
+        #         dev_id = mapping[1]
+        #         acc_sum += calculate_accuracy(op_id)
+        #         delay_sum += calculate_delay(op_id, source_device_id, dev_id)
+        #         power_sum += calculate_power(op_id, dev_id)
+        #     avg_acc = acc_sum / len(task_list)
+        #     avg_delay = delay_sum / len(task_list)
+        #     avg_cpu_consumption, avg_ram_consumption = calculate_resource_consumption(solution)
+        #     data["avg_accuracy"].append(avg_acc)
+        #     data["avg_delay"].append(avg_delay)
+        #     data["power_consumption"].append(power_sum)
+        #     data["avg_cpu_consumption"].append(avg_cpu_consumption)
+        #     data["avg_memory_consumption"].append(avg_ram_consumption)
+
     if record:
-        nol_objective = utility / len(task_list)
-        # data['group'].append(f"i={len(task_list)} k={len(device_list)}")
-        data['group'].append(len(task_list))
-        data['Objective'].append(utility)
-        data['Normalized objective'].append(nol_objective)
-        data['time'].append(elapsed_time)
-        data['algorithm'].append(solver)
-        acc_sum = 0.0
-        delay_sum = 0.0
-        power_sum = 0.0
+        avg_nol_objective = (sum_utility/iterations) / len(task_list)
+        avg_time = sum_elapsed_time / iterations
 
-        for i, mapping in enumerate(solution):
-            source_device_id = task_list[i]["source"]
-            op_id = mapping[0]
-            dev_id = mapping[1]
-            acc_sum += calculate_accuracy(op_id)
-            delay_sum += calculate_delay(op_id, source_device_id, dev_id)
-            power_sum += calculate_power(op_id, dev_id)
-        avg_acc = acc_sum / len(task_list)
-        avg_delay = delay_sum / len(task_list)
-        avg_cpu_consumption, avg_ram_consumption = calculate_resource_consumption(solution)
-        data["avg_accuracy"].append(avg_acc)
-        data["avg_delay"].append(avg_delay)
-        data["power_consumption"].append(power_sum)
-        data["avg_cpu_consumption"].append(avg_cpu_consumption)
-        data["avg_memory_consumption"].append(avg_ram_consumption)
+        data['Normalized objective'].append(avg_nol_objective)
+        data['time'].append(avg_time)
+        data['group'].append(len(task_list))
+        data['algorithm'].append(solver)
 
 def main():
     num_devices = 20
@@ -281,28 +294,27 @@ def main():
     # make_decision_from_task_new(task_list, device_list, transmission_matrix, "MIP")
 
 def evaluation_experiments():
-    num_devices = [20]
-    num_requests = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+    num_devices = [100]
+    num_requests = [10, 20, 30, 40, 50, 60, 70]
     # num_devices = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
     # num_requests = [10]
     measure_times = 1
-    solvers = ["TOPSIS", "LocalSearch", "ORTools"]
+    solvers = ["LocalSearch", "ORTools"]
 
     for i, device_num in enumerate(num_devices):
         # for j in range(i + 1):
         for j in range(len(num_requests)):
-            for t in range(measure_times):
-                request_num = num_requests[j]
-                device_list = generate_devices(device_num)
-                task_list = generate_tasks(request_num, device_list)
-                transmission_matrix = generate_transmission_rate_matrix(len(device_list))
-                for solver in solvers:
-                    print(f"Running i={request_num} k={device_num}, solver={solver}, iteration {t}")
-                    make_decision_from_task_new(task_list, device_list, transmission_matrix, solver, display=False, record=True)
+            request_num = num_requests[j]
+            device_list = generate_devices(device_num)
+            task_list = generate_tasks(request_num, device_list)
+            transmission_matrix = generate_transmission_rate_matrix(len(device_list))
+            for solver in solvers:
+                print(f"Running i={request_num} k={device_num}, solver={solver}")
+                make_decision_from_task_new(task_list, device_list, transmission_matrix, solver, display=False, record=True, iterations=10)
 
     # record finishes, save into csv
     df = pd.DataFrame(data)
-    df.to_csv('results/evaluation_6.csv', index=False)
+    df.to_csv('results/evaluation_9.csv', index=False)
 if __name__ == '__main__':
     # main()
     evaluation_experiments()
