@@ -295,7 +295,7 @@ def main():
 
 def evaluation_experiments():
     num_devices = [100]
-    num_requests = [10, 20, 30, 40, 50, 60, 70]
+    num_requests = [80, 90, 100]
     # num_devices = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
     # num_requests = [10]
     measure_times = 1
@@ -314,7 +314,7 @@ def evaluation_experiments():
 
     # record finishes, save into csv
     df = pd.DataFrame(data)
-    df.to_csv('results/evaluation_9.csv', index=False)
+    df.to_csv('results/evaluation_10.csv', index=False)
 if __name__ == '__main__':
     # main()
     evaluation_experiments()
