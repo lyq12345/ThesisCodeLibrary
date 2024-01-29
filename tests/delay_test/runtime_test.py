@@ -3,6 +3,8 @@ import requests
 import time
 import pandas as pd
 import sys
+from datetime import datetime
+
 # import keyboard
 
 # image_path = 'fire.jpg'
@@ -78,7 +80,9 @@ def process_distribution(device, operator, version, port, interval, epoth):
             data['proc_time'] = data['proc_time'][-50:]
         avg_delay = sum(data['proc_time']) / len(data['proc_time'])
         data['proc_time'].append(avg_delay)
-        save_file = f"results/qos_tests/{device}_{operator}_{version}_{interval}.csv"
+        current_time = datetime.now()
+        timestamp_format = current_time.strftime("%y%m%d%H%M%S")
+        save_file = f"results/scale_tests/{device}_{operator}_{version}_{interval}_{timestamp_format}.csv"
         df = pd.DataFrame(data)
         df.to_csv(save_file, index=False)  # 保存到CSV文件
         print("Completed.")
