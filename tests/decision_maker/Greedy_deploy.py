@@ -71,7 +71,7 @@ power_lookup_table = {
   }
 }
 
-class LocalSearch_deploy:
+class Greedy_deploy:
     def __init__(self, tasks, devices, operators, transmission_matrix):
         self.tasks = tasks
         self.devices = devices

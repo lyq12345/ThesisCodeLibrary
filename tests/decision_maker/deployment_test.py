@@ -268,9 +268,9 @@ def main():
 
     parser = argparse.ArgumentParser(description='示例脚本，演示如何使用 argparse 解析命令行参数.')
 
-    parser.add_argument('-d', '--num_devices', default=20, type=int, help='number of devices')
+    parser.add_argument('-d', '--num_devices', default=100, type=int, help='number of devices')
     parser.add_argument('-r', '--num_requests', default=20, type=float, help='number of requests')
-    parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
+    parser.add_argument('-s', '--solver', type=str, default='LocalSearch', help='solver name')
 
     args = parser.parse_args()
 
@@ -316,6 +316,6 @@ def evaluation_experiments():
     df = pd.DataFrame(data)
     df.to_csv('results/evaluation_10.csv', index=False)
 if __name__ == '__main__':
-    # main()
-    evaluation_experiments()
+    main()
+    # evaluation_experiments()
 
