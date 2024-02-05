@@ -71,17 +71,15 @@ power_lookup_table = {
   }
 }
 
-class LocalSearch_deploy:
+class LocalSearch_new:
     def __init__(self, tasks, devices, operators, transmission_matrix):
         self.tasks = tasks
         self.devices = copy.deepcopy(devices)
         self.operators = operators
         self.transmission_matrix = transmission_matrix
 
-        self.solution = [None]*len(tasks)
-
-    def get_candidate_operators(self, task):
-        object = task["object"]
+    def get_candidate_operators(self, task_id):
+        object = self.tasks[task_id]["object"]
         candidate_operators = []
         for op in self.operators:
             if op["object"] == object:
@@ -118,43 +116,65 @@ class LocalSearch_deploy:
 
         topsis_decider = TOPSIS_decider(self.tasks, self.devices, self.operators, self.transmission_matrix)
         init_solution, init_utility = topsis_decider.make_decision(display=False)
-        # self.calculate_resource_consumption(init_solution)
-        self.solution = init_solution
+        self.calculate_resource_consumption(init_solution)
+        return init_solution
+
+    def swap_resource(self, devices, current_solution, neighbors):
+        # replace an active device with a new resource; all operators on it should be moved
+        ops_on_devices = [[] for _ in range(len(devices))]
+        for task_id, mapping in enumerate(current_solution):
+            op_id = mapping[0]
+            dev_id = mapping[1]
+            ops_on_devices[dev_id].append(op_id)
+        for dev_id, ops in enumerate(ops_on_devices):
+            # find devices that can accommodate all ops on dev_id
+            filtered_dev_ids = [item for item in self.filter_devices_multiop(devices, ops) if item != dev_id]
+            for other_dev_id in filtered_dev_ids:
+                new_neighbor = copy.deepcopy(current_solution)
+                for task_id, mapping in enumerate(new_neighbor):
+                    if mapping[1] == dev_id:
+                        new_neighbor[task_id][1] = other_dev_id
+                # TODO: effective remove repeatable?
+                if new_neighbor not in neighbors:
+                    neighbors.append(new_neighbor)
+
+    def move_operator(self, devices, current_solution, neighbors):
+        # move an operator from u to a new v
+        for task_id, mapping in enumerate(current_solution):
+            op_id = mapping[0]
+            dev_id = mapping[1]
+            filtered_dev_ids = [item for item in self.filter_devices(devices, op_id) if item != dev_id]
+            for other_dev_id in filtered_dev_ids:
+                new_neighbor = copy.deepcopy(current_solution)
+                new_neighbor[task_id][1] = other_dev_id
+                # TODO: effective remove repeatable?
+                if new_neighbor not in neighbors:
+                    neighbors.append(new_neighbor)
+
+    def change_operator(self, devices, current_solution, neighbors):
+        # change deployed operators to other compartiable operator
+        for task_id, mapping in enumerate(current_solution):
+            op_id = mapping[0]
+            dev_id = mapping[1]
+            other_op_ids = [item for item in self.get_candidate_operators(task_id) if item != op_id]
+            self.undeploy(devices, mapping)
+            for other_op_id in other_op_ids:
+                if self.is_system_consistent(devices[dev_id]["resources"]["system"], self.operators[other_op_id]["requirements"]["system"]):
+                    new_neighbor = copy.deepcopy(current_solution)
+                    new_neighbor[task_id][0] = other_op_id
+                    if new_neighbor not in neighbors:
+                        neighbors.append(new_neighbor)
+            self.deploy(devices, mapping)
 
 
-    def perturbation(self, current_solution):
+    def get_neighbors(self, current_solution):
         """
-        Perturbation Strategy:
-         randomly swap two task assignments of the same type
-        categorize tasks with the same object type
-        Be sure the solution is feasible before swapping!
+        exploration strategies:
+        1) swap resources: replace an active device u with a new one v
+        2) relocate operator: relocate a single operator i from its location u to a new device v
+        3) change operator: change operator i on a device u to operator j that does the same thing
+        4) merge tasks with same type of requests
         """
-
-        type_dict = {}
-
-        for i, mapping in enumerate(current_solution):
-            operator_id = mapping[0]
-            object_type = self.operators[operator_id]["object"]
-            if object_type not in type_dict.keys():
-                type_dict[object_type] = []
-            type_dict[object_type].append(i)
-        swapable_objects = []
-        for key, value in type_dict.items():
-            if len(value) >= 2:
-                swapable_objects.append(key)
-        if len(swapable_objects) == 0:
-            return current_solution
-        new_solution = current_solution[:]
-        selected_group = random.choice(swapable_objects)
-        task_ids = type_dict[selected_group]
-        swap_id1, swap_id2 = random.sample(task_ids, 2)
-        new_solution[swap_id1], new_solution[swap_id2] = new_solution[swap_id2], new_solution[swap_id1]
-
-        if not self.solution_feasible(new_solution):
-            return current_solution
-        return new_solution
-
-    def get_neighbors(self, current_solution, tabu_list):
         # moving one operator to another device; change to another operator
         device_copy = copy.deepcopy(self.devices)
         # consume the devices
@@ -162,88 +182,34 @@ class LocalSearch_deploy:
             self.deploy(device_copy, mapping)
         # print("current solution: ", current_solution)
 
-
-        """
-        Exploration strategy:
-        1. explore every neighbor operators
-            2. for each neighbor op, explore every compartiable devices
-        """
         neighbors = []
-        for i in range(len(current_solution)):
-            candidate_ops = self.get_candidate_operators(self.tasks[i])
-            mapping = current_solution[i]
+        self.swap_resource(device_copy, current_solution, neighbors)
+        self.move_operator(device_copy, current_solution, neighbors)
+        self.change_operator(device_copy, current_solution, neighbors)
 
-            # undeploy to release the resources:
-            self.undeploy(device_copy, mapping)
-            # for all other candidate operators:
-            for op_id in candidate_ops:
-                # move operator to a different device
-                filtered_devices = self.filter_devices(device_copy, op_id)
-                for dev_id in filtered_devices:
-                    if op_id == mapping[0] and dev_id == mapping[1]:
-                        continue
-                    neighbor = current_solution[:]
-                    neighbor[i] = (op_id, dev_id)
-                    if neighbor not in tabu_list:
-                        neighbors.append(neighbor)
-            # deploy back!
-            self.deploy(device_copy, mapping)
         return neighbors
 
-    def tabu_search(self, initial_solution, max_iterations, tabu_list_size, max_no_improvements):
-        best_solution = initial_solution
+    def local_search(self):
+        best_solution = self.initial_solution()
         best_utility = self.calculate_utility(best_solution)
-        current_solution = initial_solution
-        tabu_list = []
-        count = 0
-
-        # iterate until no max improvements made
-        # TODO: maximum running time
-        for i in range(max_iterations):
-            current_solution = self.local_search(current_solution, tabu_list)
-            current_utility = self.calculate_utility(current_solution)
-            # print(1)
-
-            # if there's improvement
-            if current_utility > best_utility:
-                # print(f"utility from {best_utility} -> {current_utility}")
-                best_solution = current_solution
-                best_utility = current_utility
-                # self.calculate_resource_consumption(best_solution)
-                tabu_list.append(current_solution)
-                if len(tabu_list) > tabu_list_size:
-                    tabu_list.pop(0)
-                count = 0
-                # print(f"best solution after iteration {i}: {best_utility}")
-            # no improvement
-            else:
-                if count <= max_no_improvements:
-                    # perturbation
-                    current_solution = self.perturbation(current_solution)
-                    count += 1
-                    # print("No better solution found. Perturbation performed.")
-                else:
-                    break
-        # print(best_solution, self.calculate_utility(best_solution))
-
-        return best_solution, best_utility
-
-    def local_search(self, current_solution, tabu_list):
-        neighbors = self.get_neighbors(current_solution, tabu_list)
-        best_neighbor = None
-        best_neighbor_utility = float('-inf')
-
-        for neighbor in neighbors:
-            # check list
-            if neighbor not in tabu_list:
-                # self.calculate_resource_consumption(neighbor)
+        while True:
+            best_neighbor_utility = best_utility
+            best_neighbor = best_solution
+            neighbors = self.get_neighbors(best_solution)
+            # find the best neighbor
+            for neighbor in neighbors:
                 neighbor_utility = self.calculate_utility(neighbor)
                 if neighbor_utility > best_neighbor_utility:
                     # self.calculate_resource_consumption(neighbor)
-                    best_neighbor = neighbor
                     best_neighbor_utility = neighbor_utility
+                    best_neighbor = neighbor
+            if best_neighbor_utility > best_utility:
+                best_solution = best_neighbor
+                best_utility = best_neighbor_utility
+            else:             # if no improvements made:
+                break
 
-        return best_neighbor
+        return best_solution, best_utility
 
     def is_system_consistent(self, system_resources, system_requirements):
         for key, value in system_requirements.items():
@@ -278,6 +244,24 @@ class LocalSearch_deploy:
         operator = self.operators[operator_id]
         for dev in devices:
             if self.is_system_consistent(dev["resources"]["system"], operator["requirements"]["system"]):
+                filtered_devices.append(dev)
+        filtered_device_ids = [d["id"] for d in filtered_devices]
+        return filtered_device_ids
+
+    def filter_devices_multiop(self, devices, operator_ids):
+        filtered_devices = []
+        for dev in devices:
+            accumulated_resources = {
+                "cpu": 0,
+                 "gpu": 0,
+                "storage": 0,
+                "memory": 0
+            }
+            for op_id in operator_ids:
+                operator = self.operators[op_id]
+                for key, value in operator["requirements"]["system"].items():
+                    accumulated_resources[key] += value
+            if self.is_system_consistent(dev["resources"]["system"], accumulated_resources):
                 filtered_devices.append(dev)
         filtered_device_ids = [d["id"] for d in filtered_devices]
         return filtered_device_ids
@@ -333,9 +317,7 @@ class LocalSearch_deploy:
 
     def make_decision(self):
         print("Running Local Search decision maker")
-        # self.iterated_local_search(max_iterations=10, max_no_improve=5)
-        self.initial_solution()
-        best_solution, best_utility = self.tabu_search(self.solution, max_iterations=100, tabu_list_size=20, max_no_improvements=30)
+        best_solution, best_utility = self.local_search()
         return best_solution, best_utility
 
 

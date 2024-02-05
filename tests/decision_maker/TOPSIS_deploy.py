@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import copy
 
 speed_lookup_table = {
   0: {
@@ -89,7 +90,7 @@ power_lookup_table = {
 class TOPSIS_decider:
     def __init__(self, tasks, devices, operators, transmission_matrix):
         self.tasks = tasks
-        self.devices = devices
+        self.devices = copy.deepcopy(devices)
         self.operators = operators
         self.transmission_matrix = transmission_matrix
 
@@ -142,30 +143,30 @@ class TOPSIS_decider:
         power = power_lookup_table[operator_id][device_model]
         return power
 
-    def deploy(self, mapping):
-        operator_name = mapping[0]
+    def deploy(self, devices, mapping):
+        operator_id = mapping[0]
         device_id = mapping[1]
         operator_resource = {}
         for op in self.operators:
-            if operator_name == op["name"]:
+            if operator_id == op["id"]:
                 operator_resource = op["requirements"]["system"]
 
         for type, amount in operator_resource.items():
-            self.devices[device_id]["resources"]["system"][type] -= amount
+            devices[device_id]["resources"]["system"][type] -= amount
 
 
     def calculate_rc(self, source_device_id, operator_candidates):
         # create decision matrix accuracy | delay | power
         decision_matrix = []
         mappings = []
-        num_criterias = 3
+        num_criterias = 2
         for op_id in operator_candidates:
             filtered_device_ids = self.filter_devices(op_id)
             for dev_id in filtered_device_ids:
                 accuracy = self.operators[op_id]["accuracy"]
                 delay = self.calculate_delay(op_id, source_device_id, dev_id)
                 power = self.calculate_power(op_id, dev_id)
-                criteria_list = [accuracy, delay, power]
+                criteria_list = [accuracy, delay]
                 decision_matrix.append(criteria_list)
                 mappings.append([op_id, dev_id])
 
@@ -181,7 +182,7 @@ class TOPSIS_decider:
                 decision_matrix_np[i, j] = decision_matrix_np[i, j] / denominator
         # Calculate the Weighted Normalized Decision Matrix (WNDM)
         # weights = [1/num_criterias for _ in range(num_criterias)]
-        weights = [0.5, 0.3, 0.2]
+        weights = [0.5, 0.5]
         # Calculate the Normalized Decision Matrix (NDM)
         for i in range(len(decision_matrix)):
             for j in range(num_criterias):
@@ -192,10 +193,10 @@ class TOPSIS_decider:
         min_of_accuracy = np.min(decision_matrix_np[:, 0])
         min_of_delay = np.min(decision_matrix_np[:, 1])
         max_of_delay = np.max(decision_matrix_np[:, 1])
-        min_of_power = np.min(decision_matrix_np[:, 2])
-        max_of_power = np.max(decision_matrix_np[:, 2])
-        A_plus = np.array([max_of_accuracy, min_of_delay, min_of_power])
-        A_minus = np.array([min_of_accuracy, max_of_delay, max_of_power])
+        # min_of_power = np.min(decision_matrix_np[:, 2])
+        # max_of_power = np.max(decision_matrix_np[:, 2])
+        A_plus = np.array([max_of_accuracy, min_of_delay])
+        A_minus = np.array([min_of_accuracy, max_of_delay])
 
         # Calculate the Separation Measures (SM).
         SM_plus = np.zeros(len(decision_matrix))
@@ -221,7 +222,7 @@ class TOPSIS_decider:
                 break
 
         if selected_mapping_id != -1:
-            self.deploy(mappings[selected_mapping_id])
+            self.deploy(self.devices, mappings[selected_mapping_id])
 
         return mappings[selected_mapping_id], max_rc
 

@@ -13,6 +13,8 @@ from MIP_deploy import MIP_Decider
 from TOPSIS_deploy import TOPSIS_decider
 from LocalSearch_deploy import LocalSearch_deploy
 from ORTools_deploy import ORTools_Decider
+from Greedy_deploy import Greedy_decider
+from LocalSearch_new import LocalSearch_new
 from examples.testcases import generate_testcase
 
 from status_tracker.task_mock import generate_tasks
@@ -62,9 +64,6 @@ speed_lookup_table = {
     "jetson-xavier": 0.25310
   },
 }
-
-# data = {'group':[], 'Objective':[], 'Normalized objective':[], 'time':[], 'algorithm': [], "avg_accuracy": [], "avg_delay": [], "avg_cpu_consumption": [], "avg_memory_consumption": [],"power_consumption": []}
-data = {'group':[], 'Normalized objective':[], 'time':[], 'algorithm': []}
 power_lookup_table = {
   1: {
     "jetson-nano": 2916.43,
@@ -107,6 +106,10 @@ power_lookup_table = {
     "jetson-xavier": 4261.83
   }
 }
+
+# data = {'group':[], 'Objective':[], 'Normalized objective':[], 'time':[], 'algorithm': [], "avg_accuracy": [], "avg_delay": [], "avg_cpu_consumption": [], "avg_memory_consumption": [],"power_consumption": []}
+data = {'group':[], 'Normalized objective':[], 'time':[], 'algorithm': []}
+
 
 def read_json(filename):
     with open(filename, 'r') as json_file:
@@ -170,6 +173,10 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
         for i in range(len(cpu_consumptions)):
             cpu_consumptions[i] = cpu_consumptions[i] / device_list[i]["resources"]["system"]["cpu"]
             ram_consumptions[i] = ram_consumptions[i] / device_list[i]["resources"]["system"]["memory"]
+        print("CPU consumptions: ")
+        print(cpu_consumptions)
+        print("Memory consumptions:")
+        print(ram_consumptions)
         avg_cpu_consumption = sum(cpu_consumptions)/len(cpu_consumptions)
         avg_ram_consumption = sum(ram_consumptions)/len(ram_consumptions)
         return avg_cpu_consumption, avg_ram_consumption
@@ -181,6 +188,10 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
         decision_maker = LocalSearch_deploy(task_list, device_list, operator_list, transmission_matrix)
     elif solver == "ORTools":
         decision_maker = ORTools_Decider(task_list, device_list, operator_list, transmission_matrix)
+    elif solver == "Greedy":
+        decision_maker = Greedy_decider(task_list, device_list, operator_list, transmission_matrix)
+    elif solver == "LocalSearch_new":
+        decision_maker = LocalSearch_new(task_list, device_list, operator_list, transmission_matrix)
 
     sum_elapsed_time = 0.0
     sum_utility = 0.0
@@ -197,9 +208,6 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
         sum_elapsed_time += elapsed_time
         sum_utility += utility
 
-
-        # acc_deviation_sum = 0.0
-        # delay_deviation_sum = 0.0
         if display:
             print("Solution: ")
             for i, mapping in enumerate(solution):
@@ -221,36 +229,10 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
                 print(f"Performance: accuracy: {performance_acc}, delay: {performance_delay}, power: {performance_power}, objective: {performance_objective}")
                 print("--------------------------------------------------------------")
             print(f"Decision making time: {elapsed_time} s")
+            calculate_resource_consumption(solution)
             # print(f"Accuracy deviation: {acc_deviation_sum / len(task_list)}")
             # print(f"Delay deviation: {delay_deviation_sum / len(task_list)}")
             print(f"Overall Objective: {utility}")
-        # if record:
-        #     nol_objective = utility / len(task_list)
-        #     # data['group'].append(f"i={len(task_list)} k={len(device_list)}")
-        #     data['group'].append(len(task_list))
-        #     data['Objective'].append(utility)
-        #     data['Normalized objective'].append(nol_objective)
-        #     data['time'].append(elapsed_time)
-        #     data['algorithm'].append(solver)
-        #     acc_sum = 0.0
-        #     delay_sum = 0.0
-        #     power_sum = 0.0
-        #
-        #     for i, mapping in enumerate(solution):
-        #         source_device_id = task_list[i]["source"]
-        #         op_id = mapping[0]
-        #         dev_id = mapping[1]
-        #         acc_sum += calculate_accuracy(op_id)
-        #         delay_sum += calculate_delay(op_id, source_device_id, dev_id)
-        #         power_sum += calculate_power(op_id, dev_id)
-        #     avg_acc = acc_sum / len(task_list)
-        #     avg_delay = delay_sum / len(task_list)
-        #     avg_cpu_consumption, avg_ram_consumption = calculate_resource_consumption(solution)
-        #     data["avg_accuracy"].append(avg_acc)
-        #     data["avg_delay"].append(avg_delay)
-        #     data["power_consumption"].append(power_sum)
-        #     data["avg_cpu_consumption"].append(avg_cpu_consumption)
-        #     data["avg_memory_consumption"].append(avg_ram_consumption)
 
     if record:
         avg_nol_objective = (sum_utility/iterations) / len(task_list)
@@ -266,11 +248,11 @@ def main():
     num_requests = 6
     solver = "LocalSearch"
 
-    parser = argparse.ArgumentParser(description='示例脚本，演示如何使用 argparse 解析命令行参数.')
+    parser = argparse.ArgumentParser(description='test script.')
 
-    parser.add_argument('-d', '--num_devices', default=100, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=20, type=float, help='number of requests')
-    parser.add_argument('-s', '--solver', type=str, default='LocalSearch', help='solver name')
+    parser.add_argument('-d', '--num_devices', default=10, type=int, help='number of devices')
+    parser.add_argument('-r', '--num_requests', default=10, type=float, help='number of requests')
+    parser.add_argument('-s', '--solver', type=str, default='LocalSearch_new', help='solver name')
 
     args = parser.parse_args()
 
@@ -286,8 +268,8 @@ def main():
 
     if solver == "All":
         make_decision_from_task_new(task_list, device_list, transmission_matrix, "LocalSearch")
+        make_decision_from_task_new(task_list, device_list, transmission_matrix, "TOPSIS")
         make_decision_from_task_new(task_list, device_list, transmission_matrix, "ORTools")
-        # make_decision_from_task_new(task_list, device_list, transmission_matrix, "MIP")
     else:
         make_decision_from_task_new(task_list, device_list, transmission_matrix, solver)
     # make_decision_from_task_new(task_list, device_list, transmission_matrix, "TOPSIS")

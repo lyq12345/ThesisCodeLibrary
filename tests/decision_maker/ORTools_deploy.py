@@ -1,30 +1,6 @@
 import numpy as np
 from ortools.linear_solver import pywraplp
 
-
-speed_lookup_table = {
-  1: {
-    "jetson-nano": 4.364,
-    "raspberrypi-4b": 7.0823,
-    "jetson-xavier": 2.6235
-  },
-  0: {
-    "jetson-nano": 0.5549,
-    "raspberrypi-4b": 1.0702,
-    "jetson-xavier": 0.4276
-  },
-  3: {
-    "jetson-nano": 4.4829,
-    "raspberrypi-4b": 7.2191,
-    "jetson-xavier": 3.8648
-  },
-  2: {
-    "jetson-nano": 0.5864,
-    "raspberrypi-4b": 1.0913,
-    "jetson-xavier": 0.4605
-  }
-}
-
 speed_lookup_table = {
   0: {
     "jetson-nano": 0.5520,
@@ -155,7 +131,6 @@ class ORTools_Decider:
         count = 0
         for task in tasks:
             object_type = task["object"]
-            # device_names = [dev["model"] for dev in devices]
             for op in operators:
                 if op["type"] == "processing" and op["object"] == object_type:
                     data["operator_accuracies"].append(op["accuracy"])

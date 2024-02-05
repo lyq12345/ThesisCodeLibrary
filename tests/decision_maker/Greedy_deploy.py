@@ -71,9 +71,9 @@ power_lookup_table = {
   }
 }
 
-class Greedy_deploy:
+class Greedy_decider:
     def __init__(self, tasks, devices, operators, transmission_matrix):
-        self.tasks = tasks
+        self.tasks = sorted(tasks, key=lambda x: x['priority'], reverse=True)
         self.devices = devices
         self.operators = operators
         self.transmission_matrix = transmission_matrix
@@ -176,5 +176,18 @@ class Greedy_deploy:
             devices[device_id]["resources"]["system"][type] += amount
 
     def make_decision(self):
-        print("Running Greedy First-Fit decision maker")
+        solution = []
+        for task in self.tasks:
+            object_code = task["object_code"]
+            source_device_id = task["source"]
+            operator_candidates = []
+            for op in self.operators:
+                if op["object_code"] == object_code:
+                    operator_candidates.append(op["id"])
+
+            mapping, RC = self.calculate_rc(source_device_id, operator_candidates)
+            solution.append(mapping)
+        utility = self.calculate_utility(solution)
+        return solution, utility
+
 
