@@ -116,6 +116,26 @@ def read_json(filename):
         data = json.load(json_file)
     return data
 
+def print_table(data):
+    # 打印表头
+    print("|", end="")
+    for header in data[0]:
+        print(f" {header} |", end="")
+    print()
+
+    # 打印分隔线
+    print("|", end="")
+    for _ in data[0]:
+        print("------|", end="")
+    print()
+
+    # 打印数据行
+    for row in data[1:]:
+        print("|", end="")
+        for item in row:
+            print(f" {item} |", end="")
+        print()
+
 def choose_best_operator(operator_candidates):
     max_speed_op = max(operator_candidates, key=lambda x: x["speed"])
     return max_speed_op
@@ -181,6 +201,7 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
         avg_ram_consumption = sum(ram_consumptions)/len(ram_consumptions)
         return avg_cpu_consumption, avg_ram_consumption
 
+
     decision_maker = None
     if solver == "TOPSIS":
         decision_maker = TOPSIS_decider(task_list, device_list, operator_list, transmission_matrix)
@@ -196,14 +217,20 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
     sum_elapsed_time = 0.0
     sum_utility = 0.0
 
+    res_objective = 0
+    res_time = 0
+
+
     for i in range(iterations):
 
         print(f"Running iteration {i+1} ...")
 
         start_time = time.time()
         solution, utility = decision_maker.make_decision()
+        res_objective = utility
         end_time = time.time()
         elapsed_time = end_time - start_time
+        res_time = elapsed_time
 
         sum_elapsed_time += elapsed_time
         sum_utility += utility
@@ -242,6 +269,7 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
         data['time'].append(avg_time)
         data['group'].append(len(task_list))
         data['algorithm'].append(solver)
+    return res_objective, res_time
 
 def main():
     num_devices = 20
@@ -250,9 +278,9 @@ def main():
 
     parser = argparse.ArgumentParser(description='test script.')
 
-    parser.add_argument('-d', '--num_devices', default=10, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=10, type=float, help='number of requests')
-    parser.add_argument('-s', '--solver', type=str, default='LocalSearch_new', help='solver name')
+    parser.add_argument('-d', '--num_devices', default=50, type=int, help='number of devices')
+    parser.add_argument('-r', '--num_requests', default=20, type=float, help='number of requests')
+    parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
 
     args = parser.parse_args()
 
@@ -267,9 +295,24 @@ def main():
 
 
     if solver == "All":
-        make_decision_from_task_new(task_list, device_list, transmission_matrix, "LocalSearch")
-        make_decision_from_task_new(task_list, device_list, transmission_matrix, "TOPSIS")
-        make_decision_from_task_new(task_list, device_list, transmission_matrix, "ORTools")
+        table_data = [
+            ["Algorithm", "Objective", "Time"]
+        ]
+        obj_1, time_1 = make_decision_from_task_new(task_list, device_list, transmission_matrix, "LocalSearch")
+        table_data.append(["LocalSearch", obj_1, time_1])
+
+        obj_2, time_2 = make_decision_from_task_new(task_list, device_list, transmission_matrix, "LocalSearch_new")
+        table_data.append(["LocalSearch_new", obj_2, time_2])
+
+        obj_3, time_3 = make_decision_from_task_new(task_list, device_list, transmission_matrix, "TOPSIS")
+        table_data.append(["TOPSIS", obj_3, time_3])
+
+        obj_4, time_4 = make_decision_from_task_new(task_list, device_list, transmission_matrix, "ORTools")
+        table_data.append(["ORTools", obj_4, time_4])
+
+        print("Summary:")
+        print_table(table_data)
+
     else:
         make_decision_from_task_new(task_list, device_list, transmission_matrix, solver)
     # make_decision_from_task_new(task_list, device_list, transmission_matrix, "TOPSIS")
@@ -277,11 +320,11 @@ def main():
 
 def evaluation_experiments():
     num_devices = [100]
-    num_requests = [80, 90, 100]
+    num_requests = [i for i in range(1, 21)]
     # num_devices = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
     # num_requests = [10]
     measure_times = 1
-    solvers = ["LocalSearch", "ORTools"]
+    solvers = ["LocalSearch","LocalSearch_new", "TOPSIS", "ORTools"]
 
     for i, device_num in enumerate(num_devices):
         # for j in range(i + 1):
@@ -296,8 +339,8 @@ def evaluation_experiments():
 
     # record finishes, save into csv
     df = pd.DataFrame(data)
-    df.to_csv('results/evaluation_10.csv', index=False)
+    df.to_csv('results/evaluation_12.csv', index=False)
 if __name__ == '__main__':
-    main()
-    # evaluation_experiments()
+    # main()
+    evaluation_experiments()
 

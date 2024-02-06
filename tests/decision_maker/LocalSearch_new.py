@@ -316,7 +316,7 @@ class LocalSearch_new:
             devices[device_id]["resources"]["system"][type] += amount
 
     def make_decision(self):
-        print("Running Local Search decision maker")
+        print("Running Local Search New decision maker")
         best_solution, best_utility = self.local_search()
         return best_solution, best_utility
 
