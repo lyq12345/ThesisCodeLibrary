@@ -1,0 +1,77 @@
+[
+  {
+    "jetson-nano": 0.5520,
+    "raspberrypi-4b": 0.9476,
+    "jetson-xavier": 0.4284
+  },
+  {
+    "jetson-nano": 4.3067,
+    "raspberrypi-4b": 6.9829,
+    "jetson-xavier": 2.4311
+  },
+  {
+    "jetson-nano": 0.6125,
+    "raspberrypi-4b": 1.0468,
+    "jetson-xavier": 0.4719
+  },
+  {
+    "jetson-nano": 4.3765,
+    "raspberrypi-4b": 7.1570,
+    "jetson-xavier": 2.6941
+  },
+  {
+    "jetson-nano": 0.3247,
+    "raspberrypi-4b": 1000000,
+    "jetson-xavier": 0.09034
+  },
+  {
+    "jetson-nano": 0.6914,
+    "raspberrypi-4b": 1000000,
+    "jetson-xavier": 0.2247
+  },
+  {
+    "jetson-nano": 0.2760,
+    "raspberrypi-4b": 1000000,
+    "jetson-xavier": 0.09924
+  },
+  {
+    "jetson-nano": 0.7468,
+    "raspberrypi-4b": 1000000,
+    "jetson-xavier": 0.25310
+  },
+  {
+    "jetson-nano": 0.3125,
+    "raspberrypi-4b": 0.74,
+    "jetson-xavier": 0.2719
+  },
+  {
+     "jetson-nano": 0.1125,
+    "raspberrypi-4b": 0.54,
+    "jetson-xavier": 0.0719
+  },
+  {
+    "jetson-nano": 5.3765,
+    "raspberrypi-4b": 8.1570,
+    "jetson-xavier": 3.6941
+  },
+  {
+    "jetson-nano": 4.8765,
+    "raspberrypi-4b": 6.6570,
+    "jetson-xavier": 2.1941
+  },
+  {
+    "jetson-nano": 4.7765,
+    "raspberrypi-4b": 6.5570,
+    "jetson-xavier": 2.0941
+  },
+  {
+    "jetson-nano": 1.5520,
+    "raspberrypi-4b": 1.9476,
+    "jetson-xavier": 1.4284
+  },
+  {
+    "jetson-nano": 1.6520,
+    "raspberrypi-4b": 2.0476,
+    "jetson-xavier": 1.5284
+  }
+]

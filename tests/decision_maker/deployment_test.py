@@ -13,18 +13,19 @@ from MIP_deploy import MIP_Decider
 from TOPSIS_deploy import TOPSIS_decider
 from LocalSearch_deploy import LocalSearch_deploy
 from ORTools_deploy import ORTools_Decider
+# from new.ORTools_deploy import ORTools_Decider
 from Greedy_deploy import Greedy_decider
 from LocalSearch_new import LocalSearch_new
 
 from status_tracker.task_mock import generate_tasks
-from status_tracker.workflow_mock import generate_workflows
+# from status_tracker.workflow_mock import generate_workflows
 from status_tracker.device_mock import generate_devices
 
 
 cur_dir = os.getcwd()
 
 speed_lookup_table_new = None
-with open(os.path.join(cur_dir, "../status_tracker/lookup_table.json"), 'r') as file:
+with open(os.path.join(cur_dir, "../status_tracker/speed_lookup_table.json"), 'r') as file:
     speed_lookup_table_new = json.load(file)
 
 print(speed_lookup_table_new)
@@ -207,7 +208,6 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
         avg_ram_consumption = sum(ram_consumptions)/len(ram_consumptions)
         return avg_cpu_consumption, avg_ram_consumption
 
-
     decision_maker = None
     if solver == "TOPSIS":
         decision_maker = TOPSIS_decider(task_list, device_list, operator_list, transmission_matrix)
@@ -228,7 +228,6 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
 
 
     for i in range(iterations):
-
         print(f"Running iteration {i+1} ...")
 
         start_time = time.time()
@@ -286,7 +285,7 @@ def main():
 
     parser.add_argument('-d', '--num_devices', default=50, type=int, help='number of devices')
     parser.add_argument('-r', '--num_requests', default=20, type=float, help='number of requests')
-    parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
+    parser.add_argument('-s', '--solver', type=str, default='ORTools', help='solver name')
 
     args = parser.parse_args()
 
@@ -295,16 +294,16 @@ def main():
     solver = args.solver
 
     device_list = generate_devices(num_devices)
-    workflow_list = generate_workflows(num_requests, device_list)
+    # workflow_list = generate_workflows(num_requests, device_list)
     # print(workflow_list)
-    # task_list = generate_tasks(num_requests, device_list)
+    task_list = generate_tasks(num_requests, device_list)
     transmission_matrix = generate_transmission_rate_matrix(len(device_list))
 
+    table_data = [
+        ["Algorithm", "Objective", "Time"]
+    ]
 
     if solver == "All":
-        table_data = [
-            ["Algorithm", "Objective", "Time"]
-        ]
         obj_1, time_1 = make_decision_from_task_new(task_list, device_list, transmission_matrix, "LocalSearch")
         table_data.append(["LocalSearch", obj_1, time_1])
 
@@ -321,7 +320,8 @@ def main():
         print_table(table_data)
 
     else:
-        make_decision_from_task_new(task_list, device_list, transmission_matrix, solver)
+        obj, time = make_decision_from_task_new(task_list, device_list, transmission_matrix, solver)
+        table_data.append(["LocalSearch", obj, time])
     # make_decision_from_task_new(task_list, device_list, transmission_matrix, "TOPSIS")
     # make_decision_from_task_new(task_list, device_list, transmission_matrix, "MIP")
 
