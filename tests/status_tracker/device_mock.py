@@ -9,7 +9,7 @@ raspi_model = {
         "os": "Raspbian GNU/Linux 10 (buster)",
         "resources": {
           "system": {
-             "cpu": 4,
+             "cpu": 400,
             "gpu": 0,
             "memory": 4096,
             "storage": 131072
@@ -28,7 +28,7 @@ jetson_nano_model = {
         "os": "ubuntu 18.04",
         "resources": {
           "system": {
-            "cpu": 4,
+            "cpu": 400,
             "gpu": 1,
             "memory": 4096,
             "storage": 65600
@@ -48,7 +48,7 @@ jetson_xavier_model = {
         "os": "ubuntu 18.04",
         "resources": {
             "system": {
-                "cpu": 4,
+                "cpu": 400,
                 "gpu": 1,
                 "memory": 32768,
                 "storage": 65600

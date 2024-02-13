@@ -15,13 +15,19 @@ from LocalSearch_deploy import LocalSearch_deploy
 from ORTools_deploy import ORTools_Decider
 from Greedy_deploy import Greedy_decider
 from LocalSearch_new import LocalSearch_new
-from examples.testcases import generate_testcase
 
 from status_tracker.task_mock import generate_tasks
+from status_tracker.workflow_mock import generate_workflows
 from status_tracker.device_mock import generate_devices
+
 
 cur_dir = os.getcwd()
 
+speed_lookup_table_new = None
+with open(os.path.join(cur_dir, "../status_tracker/lookup_table.json"), 'r') as file:
+    speed_lookup_table_new = json.load(file)
+
+print(speed_lookup_table_new)
 speed_lookup_table = {
   0: {
     "jetson-nano": 0.5520,
@@ -151,7 +157,7 @@ def generate_transmission_rate_matrix(n, min_rate=1, max_rate=5):
         for j in range(i + 1, n):
             rate = random.uniform(min_rate, max_rate)
             transmission_matrix[i, j] = rate
-            transmission_matrix[j, i] = rate  # 对称性
+            transmission_matrix[j, i] = rate  # (i,j) = (j,i)
 
     return transmission_matrix
 
@@ -289,9 +295,10 @@ def main():
     solver = args.solver
 
     device_list = generate_devices(num_devices)
-    task_list = generate_tasks(num_requests, device_list)
+    workflow_list = generate_workflows(num_requests, device_list)
+    # print(workflow_list)
+    # task_list = generate_tasks(num_requests, device_list)
     transmission_matrix = generate_transmission_rate_matrix(len(device_list))
-    # device_list, task_list, transmission_matrix = generate_testcase()
 
 
     if solver == "All":
@@ -341,6 +348,6 @@ def evaluation_experiments():
     df = pd.DataFrame(data)
     df.to_csv('results/evaluation_12.csv', index=False)
 if __name__ == '__main__':
-    # main()
-    evaluation_experiments()
+    main()
+    # evaluation_experiments()
 

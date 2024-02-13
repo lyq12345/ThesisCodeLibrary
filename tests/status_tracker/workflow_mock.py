@@ -5,27 +5,43 @@ object_dict = {
     "fire": 2
 }
 
-def generate_tasks(num_tasks, device_list):
+workflow_templates = [
+    [4, 1, 7],
+    [4, 1, 8],
+    [5, 2, 6],
+    [3, 9]
+]
+
+def generate_workflows(num_workflows, device_list):
     sensor_list = []
     for dev in device_list:
         if len(dev["resources"]["hardware"]) > 0:
             sensor_list.append(dev["id"])
-    random_selection = random.sample(sensor_list, num_tasks)
-    # print(random_selection)
 
-    task_list = []
+    # the number of sensors should be the same as workflows
+    sensor_random_selection = random.sample(sensor_list, num_workflows)
+    final_workflows = []
+
+    # workflow_list = []
+    # for _ in range(num_workflows):
+    #     sample = random.choice(workflow_templates)
+    #     workflow_list.append(sample)
+
     count = 0
 
-    for sensor_id in random_selection:
-        object = random.choice(["human", "fire"])
-        object_code = object_dict[object]
+    # each sensor randomly pick up a sensor as data source
+    for sensor_id in sensor_random_selection:
+        workflow = random.choice(workflow_templates)
         delay = random.uniform(1.0, 10.0)
         # print(delay)
         rate = device_list[sensor_id]["resources"]["hardware"][0]["rate"]
         size = device_list[sensor_id]["resources"]["hardware"][0]["size"]
-        data = {"id": count, "source": sensor_id, "rate": rate, "size": size, "object": object, "object_code": object_code, "delay": delay, "priority": 10}
+        data = {"id": count, "source": sensor_id, "rate": rate, "size": size, "workflow": workflow, "delay": delay}
         count += 1
-        task_list.append(data)
+        final_workflows.append(data)
 
-    return task_list
+    return final_workflows
+
+# if __name__ == '__main__':
+#     generate_workflows(10, )
 
