@@ -64,7 +64,7 @@ sensor_model = [
         {
           "id": 1,
           "sensor": "IMX519",
-            "rate": 0.4830,
+            "rate": 0.02,
             "size": 1200
         }
     ]

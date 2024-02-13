@@ -91,7 +91,7 @@ power_lookup_table = {
 
 cur_dir = os.getcwd()
 
-speed_lookup_table_new = None
+speed_lookup_table = None
 power_lookup_table = None
 with open(os.path.join(cur_dir, "../status_tracker/speed_lookup_table.json"), 'r') as file:
     speed_lookup_table = json.load(file)
@@ -100,25 +100,33 @@ with open(os.path.join(cur_dir, "../status_tracker/power_lookup_table.json"), 'r
     power_lookup_table = json.load(file)
 
 class ORTools_Decider:
-    def __init__(self, workflows, devices, operators, transmission_matrix):
+    def __init__(self, workflows, devices, operators, transmission_matrix, bandwidth_matrix=None):
         self.num_workflows = len(workflows)
         self.num_devices = None
         self.operator_list = operators
         self.workflows = workflows
-        self.microservices = []
         self.wf_ms_mapping = [[] for _ in range(len(workflows))]
+        self.microservices_data = self.create_microservice_model(workflows)
+        print(self.wf_ms_mapping)
+        # print(self.microservices_data)
         self.device_data = self.create_device_model(workflows, devices, transmission_matrix)
-        self.operator_data = self.create_operator_model(workflows, devices, operators)
+        self.operator_data = self.create_operator_model(operators)
+        # print(self.device_data)
 
+
+
+    def create_microservice_model(self, workflows):
+        data = {"microservice_types": [], "microservice_rates": []}
         msid_count = 0
         for wf_id, workflow in enumerate(workflows):
             microservices = workflow["workflow"]
-            for microservice in microservices:
+            rate = workflow["rate"]
+            for microservice_type in microservices:
                 self.wf_ms_mapping[wf_id].append(msid_count)
-                self.microservices.append(microservice)
+                data["microservice_types"].append(microservice_type)
+                data["microservice_rates"].append(rate)
                 msid_count += 1
-
-
+        return data
     def create_device_model(self, workflows, devices, transmission_matrix):
         data = {}
         data["resource_capability"] = []
@@ -142,28 +150,30 @@ class ORTools_Decider:
         self.num_devices = len(devices)
         return data
 
-    def create_operator_model(self, tasks, devices, operators):
+    def create_operator_model(self, operators):
         data = {}
-        data["operator_accuracies"] = []
-        data["resource_requirements"] = []
-        data["processing_speed"] = []
-        data["power_consumptions"] = []
-        data["operator_types"] = []
+        data["operator_microservices"] = []
         data["operator_ids"] = []
+        # data["operator_accuracies"] = []
+        # data["resource_requirements"] = []
+        # data["op_candidates"] = []
         count = 0
-        for task in tasks:
-            object_type = task["object"]
+        for microservice in self.microservices_data["microservice_types"]:
+
+            # candidate_ops = []
             for op in operators:
-                if op["type"] == "processing" and op["object"] == object_type:
-                    data["operator_accuracies"].append(op["accuracy"])
-                    data["resource_requirements"].append([op["requirements"]["system"][key] for key in op["requirements"]["system"]])
-                    data["operator_types"].append(op["object_code"])
+                if op["object_code"] == microservice:
+                    data["operator_microservices"].append(microservice)
                     data["operator_ids"].append(op["id"])
+                    # data["operator_ids"].append(op["id"])
+                    # data["operator_codes"].append(op["object_code"])
+                    # data["operator_accuracies"].append(op["accuracy"])
+                    # data["resource_requirements"].append([op["requirements"]["system"][key] for key in op["requirements"]["system"]])
                     # data["processing_speed"].append([speed_lookup_table[op_name][dev_name] for dev_name in device_names])
                     # data["power_consumptions"].append([speed_lookup_table[op_name][dev_name] for dev_name in device_names])
                     count += 1
+            # data["op_candidates"].append(candidate_ops)
         self.num_operators = count
-
         return data
 
     def inverse(self, x):
@@ -177,66 +187,72 @@ class ORTools_Decider:
         # Create the SCIP solver
         solver = pywraplp.Solver.CreateSolver('SCIP')
 
-        M = self.microservices
+        M = len(self.microservices_data["microservice_types"])
         O = self.num_operators
         D = self.num_devices
 
         # Create binary decision variables x_ijk for the binary matrix x
         x = {}  # x_ijk - microservice i mapping to operator j deployed on device k
-        for i in range(T):
+        for i in range(M):
             for j in range(O):
                 for k in range(D):
                     x[i, j, k] = solver.IntVar(0, 1, f'x_{i}_{j}_{k}')
 
+        # every microservice need to map one operator (two ms can map to 1)
+        for i in range(M):
+            solver.Add(solver.Sum([x[i,j,k] for j in range(O) for k in range(D)]) == 1)
+
+        # assigned operator should be consistent with microservice
+        for i in range(M):
+            for j in range(O):
+                for k in range(D):
+                    solver.Add(x[i, j, k] * self.microservices_data[i] == x[i, j, k] *
+                               self.operator_data["operator_microservices"][j])
 
         # Each operator is deployed to at most 1 device.
         for j in range(O):
-            solver.Add(solver.Sum([x[i, j, k] for i in range(T) for k in range(D)]) <= 1)
+            for i in range(M):
+                solver.Add(solver.Sum([x[i, j, k] for k in range(D)]) <= 1)
 
-        # Each data source transmit to only one operator
-        for i in range(T):
-            solver.Add(solver.Sum([x[i,j,k] for j in range(O) for k in range(D)]) == 1)
-
-        # the operator type should be consistent with microservices type
-        for i in range(T):
-            for j in range(O):
-                for k in range(D):
-                    solver.Add(x[i, j, k]*self.workflows[i]["object_code"] == x[i, j, k]*self.operator_data["operator_types"][j])
-
+        resources = ["cpu", "gpu", "storage", "memory"]
         # operator requirement sum in each device should not exceed its capacity
         for k in range(D):
-            for t in range(4):
-                solver.Add(solver.Sum([x[i, j, k] * self.operator_data["resource_requirements"][j][t] for j in range(O) for i in range(T)]) <=
-                       self.device_data["resource_capability"][k][t])
+            for resource_id, t in enumerate(resources):
+                solver.Add(solver.Sum([x[i, j, k] * self.operator_list[self.operator_data["operator_ids"][j]]["requirements"]["system"][t] for j in range(O) for i in range(M)]) <=
+                       self.device_data["resource_capability"][k][resource_id])
 
         # operator rate sum should not exceed operator processing rate
-        # for j in range(O):
-        #     # find all sources (i) that transmit to j
-        #     sum_j = []
-        #     processing_rate = 0
-        #     for i in range(T):
-        #         for k in range(D):
-        #             rate = self.tasks[i]["rate"]
-        #             dev_name = self.device_data["device_models"][k]
-        #             op_id = self.operator_data["operator_ids"][j]
-        #             processing_rate += x[i,j,k] * (1 / speed_lookup_table[op_id][dev_name])
-        #             sum_j.append(x[i,j,k] * rate)
-        #     solver.Add(solver.Sum(sum_j) <= processing_rate)
 
-        utilities = []
-        for i in range(T):
-            for j in range(O):
-                for k in range(D):
-                    source_device_id = self.device_data["data_sources"][i]
-                    op_id = self.operator_data["operator_ids"][j]
-                    delay_tol = self.tasks[i]["delay"]
-                    transmission_delay = self.device_data["transmission_speed"][source_device_id][k]
-                    dev_name = self.device_data["device_models"][k]
-                    processing_delay = speed_lookup_table[op_id][dev_name]
-                    utilities.append(x[i, j, k] * (self.operator_data["operator_accuracies"][j]
-                                     - max(0, 1 - delay_tol/(processing_delay+transmission_delay))))
+        for j in range(O):
+            # find the microservices that are mapped to operator j
+            for k in range(D):
+                solver.Add(solver.Sum([x[i,j,k]*self.microservices_data["microservice_rates"][i] for i in range(M)]) <= 1 / speed_lookup_table[self.operator_data["operator_ids"][j]][self.device_data["device_models"][k]])
 
-        solver.Maximize(solver.Sum(utilities))
+        objectives = []
+        for wf_id, workflow in enumerate(self.wf_ms_mapping):
+            workflow_delay = []
+            operator_delay = []
+            accuracy_sum = 0.0
+            for idx in range(len(workflow)):
+                ms_id = workflow[idx]
+                current_delay = []
+                current_acc = []
+                for j in range(O):
+                    for k in range(D):
+                        op_id = self.operator_data["operator_ids"][j]
+                        delay_tol = self.workflows[wf_id]["delay"]
+                        current_acc.append(x[ms_id,j,k]*self.operator_list[op_id]["accuracy"])
+                        if idx == 0:
+                            source_device_id = self.device_data["data_sources"][ms_id]
+                            workflow_delay.append(x[ms_id, j, k]*self.device_data["transmission_speed"][source_device_id][k])
+                        else:
+                            workflow_delay.append(x[ms_id, j, k]*self.device_data["transmission_speed"][k][])
+                        dev_name = self.device_data["device_models"][k]
+                        processing_delay = speed_lookup_table[op_id][dev_name]
+                        objectives.append(x[ms_id, j, k] * (self.operator_data["operator_accuracies"][j]
+                                         - max(0, 1 - delay_tol/(processing_delay+transmission_delay))))
+
+        solver.Maximize(solver.Sum(objectives))
 
         status = solver.Solve()
 
