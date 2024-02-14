@@ -143,54 +143,54 @@ def make_decision_from_task_new(workflow_list, device_list, transmission_matrix,
     res_objective = 0
     res_time = 0
 
-    # for i in range(iterations):
-    #     print(f"Running iteration {i + 1} ...")
-    #
-    #     start_time = time.time()
-    #     solution, utility = decision_maker.make_decision()
-    #     res_objective = utility
-    #     end_time = time.time()
-    #     elapsed_time = end_time - start_time
-    #     res_time = elapsed_time
-    #
-    #     sum_elapsed_time += elapsed_time
-    #     sum_utility += utility
-    #
-    #     if display:
-    #         print("Solution: ")
-    #         for i, mapping in enumerate(solution):
-    #             task_object = workflow_list[i]['object']
-    #             task_delay = workflow_list[i]['delay']
-    #             source_device_id = workflow_list[i]["source"]
-    #             op_id = mapping[0]
-    #             op_name = operator_list[op_id]["name"]
-    #             dev_id = mapping[1]
-    #             performance_acc = calculate_accuracy(op_id)
-    #             performance_delay = calculate_delay(op_id, source_device_id, dev_id)
-    #             # if performance_delay > task_delay:
-    #             #     delay_deviation_sum += round((performance_delay-task_delay)/task_delay, 2)
-    #             performance_power = calculate_power(op_id, dev_id)
-    #             performance_objective = calculate_objective(op_id, source_device_id, dev_id, task_delay)
-    #             print(f"Data flow {i}:")
-    #             print(f"Request: source: {source_device_id} object: {task_object}, delay tolerance: {task_delay}")
-    #             print(f"Deployment: {op_name} -> device {dev_id}")
-    #             print(
-    #                 f"Performance: accuracy: {performance_acc}, delay: {performance_delay}, power: {performance_power}, objective: {performance_objective}")
-    #             print("--------------------------------------------------------------")
-    #         print(f"Decision making time: {elapsed_time} s")
-    #         calculate_resource_consumption(solution)
-    #         # print(f"Accuracy deviation: {acc_deviation_sum / len(task_list)}")
-    #         # print(f"Delay deviation: {delay_deviation_sum / len(task_list)}")
-    #         print(f"Overall Objective: {utility}")
-    #
-    # if record:
-    #     avg_nol_objective = (sum_utility / iterations) / len(workflow_list)
-    #     avg_time = sum_elapsed_time / iterations
-    #
-    #     data['Normalized objective'].append(avg_nol_objective)
-    #     data['time'].append(avg_time)
-    #     data['group'].append(len(workflow_list))
-    #     data['algorithm'].append(solver)
+    for i in range(iterations):
+        print(f"Running iteration {i + 1} ...")
+
+        start_time = time.time()
+        solution, utility = decision_maker.make_decision()
+        res_objective = utility
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        res_time = elapsed_time
+
+        sum_elapsed_time += elapsed_time
+        sum_utility += utility
+
+        if display:
+            print("Solution: ")
+            for i, mapping in enumerate(solution):
+                task_object = workflow_list[i]['object']
+                task_delay = workflow_list[i]['delay']
+                source_device_id = workflow_list[i]["source"]
+                op_id = mapping[0]
+                op_name = operator_list[op_id]["name"]
+                dev_id = mapping[1]
+                performance_acc = calculate_accuracy(op_id)
+                performance_delay = calculate_delay(op_id, source_device_id, dev_id)
+                # if performance_delay > task_delay:
+                #     delay_deviation_sum += round((performance_delay-task_delay)/task_delay, 2)
+                performance_power = calculate_power(op_id, dev_id)
+                performance_objective = calculate_objective(op_id, source_device_id, dev_id, task_delay)
+                print(f"Data flow {i}:")
+                print(f"Request: source: {source_device_id} object: {task_object}, delay tolerance: {task_delay}")
+                print(f"Deployment: {op_name} -> device {dev_id}")
+                print(
+                    f"Performance: accuracy: {performance_acc}, delay: {performance_delay}, power: {performance_power}, objective: {performance_objective}")
+                print("--------------------------------------------------------------")
+            print(f"Decision making time: {elapsed_time} s")
+            calculate_resource_consumption(solution)
+            # print(f"Accuracy deviation: {acc_deviation_sum / len(task_list)}")
+            # print(f"Delay deviation: {delay_deviation_sum / len(task_list)}")
+            print(f"Overall Objective: {utility}")
+
+    if record:
+        avg_nol_objective = (sum_utility / iterations) / len(workflow_list)
+        avg_time = sum_elapsed_time / iterations
+
+        data['Normalized objective'].append(avg_nol_objective)
+        data['time'].append(avg_time)
+        data['group'].append(len(workflow_list))
+        data['algorithm'].append(solver)
     return res_objective, res_time
 
 
@@ -201,8 +201,8 @@ def main():
 
     parser = argparse.ArgumentParser(description='test script.')
 
-    parser.add_argument('-d', '--num_devices', default=50, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=20, type=float, help='number of requests')
+    parser.add_argument('-d', '--num_devices', default=10, type=int, help='number of devices')
+    parser.add_argument('-r', '--num_requests', default=10, type=float, help='number of requests')
     parser.add_argument('-s', '--solver', type=str, default='ORTools', help='solver name')
 
     args = parser.parse_args()

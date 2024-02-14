@@ -9,7 +9,7 @@ import random
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 # from greedy_deploy import Greedy_Decider
-from MIP_deploy import MIP_Decider
+# from MIP_deploy import MIP_Decider
 from TOPSIS_deploy import TOPSIS_decider
 from LocalSearch_deploy import LocalSearch_deploy
 from ORTools_deploy import ORTools_Decider

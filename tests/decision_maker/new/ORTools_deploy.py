@@ -107,7 +107,7 @@ class ORTools_Decider:
         self.workflows = workflows
         self.wf_ms_mapping = [[] for _ in range(len(workflows))]
         self.microservices_data = self.create_microservice_model(workflows)
-        print(self.wf_ms_mapping)
+        # print(self.wf_ms_mapping)
         # print(self.microservices_data)
         self.device_data = self.create_device_model(workflows, devices, transmission_matrix)
         self.operator_data = self.create_operator_model(operators)
@@ -176,12 +176,6 @@ class ORTools_Decider:
         self.num_operators = count
         return data
 
-    def inverse(self, x):
-        if x == 0:
-            return 0
-        else:
-            return 1 / x
-
     def make_decision(self):
         print("Running ORTools decision maker")
         # Create the SCIP solver
@@ -206,7 +200,7 @@ class ORTools_Decider:
         for i in range(M):
             for j in range(O):
                 for k in range(D):
-                    solver.Add(x[i, j, k] * self.microservices_data[i] == x[i, j, k] *
+                    solver.Add(x[i, j, k] * self.microservices_data["microservice_types"][i] == x[i, j, k] *
                                self.operator_data["operator_microservices"][j])
 
         # Each operator is deployed to at most 1 device.
@@ -230,36 +224,39 @@ class ORTools_Decider:
 
         objectives = []
         for wf_id, workflow in enumerate(self.wf_ms_mapping):
-            workflow_delay = []
-            operator_delay = []
-            accuracy_sum = 0.0
+            workflow_latency = 0
+            accuracy = 0
+            delay_tol = self.workflows[wf_id]["delay"]
             for idx in range(len(workflow)):
                 ms_id = workflow[idx]
-                current_delay = []
-                current_acc = []
+                source_device_id = self.device_data["data_sources"][idx]
                 for j in range(O):
                     for k in range(D):
-                        op_id = self.operator_data["operator_ids"][j]
-                        delay_tol = self.workflows[wf_id]["delay"]
-                        current_acc.append(x[ms_id,j,k]*self.operator_list[op_id]["accuracy"])
-                        if idx == 0:
-                            source_device_id = self.device_data["data_sources"][ms_id]
-                            workflow_delay.append(x[ms_id, j, k]*self.device_data["transmission_speed"][source_device_id][k])
-                        else:
-                            workflow_delay.append(x[ms_id, j, k]*self.device_data["transmission_speed"][k][])
                         dev_name = self.device_data["device_models"][k]
-                        processing_delay = speed_lookup_table[op_id][dev_name]
-                        objectives.append(x[ms_id, j, k] * (self.operator_data["operator_accuracies"][j]
-                                         - max(0, 1 - delay_tol/(processing_delay+transmission_delay))))
+                        workflow_latency += x[ms_id, j, k] * speed_lookup_table[self.operator_data["operator_ids"][j]][dev_name]
+                        accuracy += x[ms_id, j, k]*self.operator_list[self.operator_data["operator_ids"][j]]["accuracy"]
+                if idx == 0:
+                    for j in range(O):
+                        for k in range(D):
+                            workflow_latency += x[ms_id, j, k]*self.device_data["transmission_speed"][source_device_id][k]
+                else:
+                    for j1 in range(O):
+                        for k1 in range(D):
+                            for j2 in range(O):
+                                for k2 in range(D):
+                                    workflow_latency += x[ms_id, j1, k1]*self.device_data["transmission_speed"][k1][k2]
+                                    workflow_latency -= (1-x[workflow[idx-1], j2, k2])*self.device_data["transmission_speed"][k1][k2]
+            # objectives.append(accuracy/len(workflow) - max(0, 1-delay_tol/workflow_latency))
+            objectives.append(delay_tol-workflow_latency)
 
         solver.Maximize(solver.Sum(objectives))
 
         status = solver.Solve()
 
         if status == pywraplp.Solver.OPTIMAL:
-            # print(f"The maximized utility sum = {solver.Objective().Value()}\n")
-            # # Print the values of x_ij
-            # print("Values of decision variable Y:")
+            print(f"The maximized utility sum = {solver.Objective().Value()}\n")
+            # Print the values of x_ij
+            print("Values of decision variable Y:")
             # for i in range(T):
             #     for j in range(O):
             #         if y[i, j].solution_value() != 0:
@@ -274,28 +271,28 @@ class ORTools_Decider:
             #         if x[j, k].solution_value() != 0:
             #             print(f"operator {j} is deployed on device {k}")
             #         # print(f"x_{j}_{k} =", x[j, k].solution_value())
-            #
-            # data_flow_count = 0
-            #
-            # print("Values of z_ijk:")
-            solution = [None]*T
+
+            data_flow_count = 0
+
+            print("Values of z_ijk:")
+            solution = [None]*M
             best_utility = solver.Objective().Value()
-            for i in range(T):
-                for j in range(O):
-                    for k in range(D):
-                        if x[i, j, k].solution_value() != 0:
-                            op_id = self.operator_data["operator_ids"][j]
-                            solution[i] = (op_id, k)
-                            # print(f"data flow {data_flow_count}: ")
-                            # source_device_id = self.device_data["data_sources"][i]
-                            # print(f"sensor on device {source_device_id} transmits data to operator {j} deployed on device {k}")
-                            # accuracy = self.operator_data["operator_accuracies"][j]
-                            # delay = self.device_data["transmission_speed"][source_device_id][k] + self.operator_data["processing_speed"][j][k]
-                            # print(f"accuracy: {accuracy}")
-                            # print(f"delay: {delay}")
-                            #
-                            # print("------------------------------------------------------------")
-                            # data_flow_count += 1
+            # for i in range(M):
+            #     for j in range(O):
+            #         for k in range(D):
+            #             if x[i, j, k].solution_value() != 0:
+            #                 op_id = self.operator_data["operator_ids"][j]
+            #                 solution[i] = (op_id, k)
+            #                 # print(f"data flow {data_flow_count}: ")
+            #                 # source_device_id = self.device_data["data_sources"][i]
+            #                 # print(f"sensor on device {source_device_id} transmits data to operator {j} deployed on device {k}")
+            #                 # accuracy = self.operator_data["operator_accuracies"][j]
+            #                 # delay = self.device_data["transmission_speed"][source_device_id][k] + self.operator_data["processing_speed"][j][k]
+            #                 # print(f"accuracy: {accuracy}")
+            #                 # print(f"delay: {delay}")
+            #                 #
+            #                 # print("------------------------------------------------------------")
+            #                 # data_flow_count += 1
             return solution, best_utility
 
         else:
