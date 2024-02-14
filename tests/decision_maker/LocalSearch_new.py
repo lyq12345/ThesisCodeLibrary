@@ -21,10 +21,10 @@ class LocalSearch_new:
         self.transmission_matrix = transmission_matrix
 
     def get_candidate_operators(self, task_id):
-        object = self.tasks[task_id]["object"]
+        object_code = self.tasks[task_id]["object_code"]
         candidate_operators = []
         for op in self.operators:
-            if op["object"] == object:
+            if op["object_code"] == object_code:
                 candidate_operators.append(op)
         candidate_op_ids = [d["id"] for d in candidate_operators]
         return candidate_op_ids

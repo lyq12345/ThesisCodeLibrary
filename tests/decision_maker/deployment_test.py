@@ -201,9 +201,9 @@ def main():
 
     parser = argparse.ArgumentParser(description='test script.')
 
-    parser.add_argument('-d', '--num_devices', default=50, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=30, type=float, help='number of requests')
-    parser.add_argument('-s', '--solver', type=str, default='LocalSearch_new', help='solver name')
+    parser.add_argument('-d', '--num_devices', default=100, type=int, help='number of devices')
+    parser.add_argument('-r', '--num_requests', default=50, type=float, help='number of requests')
+    parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
 
     args = parser.parse_args()
 
@@ -222,8 +222,8 @@ def main():
     ]
 
     if solver == "All":
-        obj_1, time_1 = make_decision_from_task_new(task_list, device_list, transmission_matrix, "LocalSearch")
-        table_data.append(["LocalSearch", obj_1, time_1])
+        # obj_1, time_1 = make_decision_from_task_new(task_list, device_list, transmission_matrix, "LocalSearch")
+        # table_data.append(["LocalSearch", obj_1, time_1])
 
         obj_2, time_2 = make_decision_from_task_new(task_list, device_list, transmission_matrix, "LocalSearch_new")
         table_data.append(["LocalSearch_new", obj_2, time_2])
