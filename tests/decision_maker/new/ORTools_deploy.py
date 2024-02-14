@@ -3,92 +3,6 @@ import os
 import json
 from ortools.linear_solver import pywraplp
 
-speed_lookup_table = {
-  0: {
-    "jetson-nano": 0.5520,
-    "raspberrypi-4b": 0.9476,
-    "jetson-xavier": 0.4284
-  },
-  1: {
-        "jetson-nano": 4.3067,
-        "raspberrypi-4b": 6.9829,
-        "jetson-xavier": 2.4311
-    },
-  2: {
-    "jetson-nano": 0.6125,
-    "raspberrypi-4b": 1.0468,
-    "jetson-xavier": 0.4719
-  },
-  3: {
-    "jetson-nano": 4.3765,
-    "raspberrypi-4b": 7.1570,
-    "jetson-xavier": 2.6941
-  },
-  4: {
-    "jetson-nano": 0.3247,
-    "raspberrypi-4b": 1000000,
-    "jetson-xavier": 0.09034
-  },
-  5: {
-    "jetson-nano": 0.6914,
-    "raspberrypi-4b": 1000000,
-    "jetson-xavier": 0.2247
-  },
-  6: {
-    "jetson-nano": 0.2760,
-    "raspberrypi-4b": 1000000,
-    "jetson-xavier": 0.09924
-  },
-  7: {
-    "jetson-nano": 0.7468,
-    "raspberrypi-4b": 1000000,
-    "jetson-xavier": 0.25310
-  },
-}
-
-power_lookup_table = {
-    0: {
-        "jetson-nano": 1584.53,
-        "raspberrypi-4b": 1174.39,
-        "jetson-xavier": 780.97
-    },
-  1: {
-    "jetson-nano": 2916.43,
-    "raspberrypi-4b": 1684.4,
-    "jetson-xavier": 1523.94
-  },
-  3: {
-    "jetson-nano": 2900.08,
-    "raspberrypi-4b": 1694.41,
-    "jetson-xavier": 1540.61
-  },
-  2: {
-    "jetson-nano": 1191.19,
-    "raspberrypi-4b": 1168.31,
-    "jetson-xavier": 803.95
-  },
-    4: {
-    "jetson-nano": 4753.59,
-    "raspberrypi-4b": 3442.17,
-    "jetson-xavier": 2342.97
-  },
-5: {
-    "jetson-nano": 8749.29,
-    "raspberrypi-4b": 5053.2,
-    "jetson-xavier": 4571.82
-  },
-6: {
-    "jetson-nano": 3573.57,
-    "raspberrypi-4b": 3504.93,
-    "jetson-xavier": 2411.55
-  },
-7: {
-    "jetson-nano": 8700.24,
-    "raspberrypi-4b": 5083.23,
-    "jetson-xavier": 4261.83
-  }
-}
-
 cur_dir = os.getcwd()
 
 speed_lookup_table = None
@@ -247,9 +161,9 @@ class ORTools_Decider:
                                     workflow_latency += x[ms_id, j1, k1]*self.device_data["transmission_speed"][k1][k2]
                                     workflow_latency -= (1-x[workflow[idx-1], j2, k2])*self.device_data["transmission_speed"][k1][k2]
             # objectives.append(accuracy/len(workflow) - max(0, 1-delay_tol/workflow_latency))
-            objectives.append(delay_tol-workflow_latency)
+            objectives.append(workflow_latency)
 
-        solver.Maximize(solver.Sum(objectives))
+        solver.Minimize(solver.Sum(objectives))
 
         status = solver.Solve()
 

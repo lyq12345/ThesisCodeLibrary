@@ -23,96 +23,13 @@ from status_tracker.device_mock import generate_devices
 
 
 cur_dir = os.getcwd()
-
-speed_lookup_table_new = None
+speed_lookup_table = None
+power_lookup_table = None
 with open(os.path.join(cur_dir, "../status_tracker/speed_lookup_table.json"), 'r') as file:
-    speed_lookup_table_new = json.load(file)
+    speed_lookup_table = json.load(file)
 
-print(speed_lookup_table_new)
-speed_lookup_table = {
-  0: {
-    "jetson-nano": 0.5520,
-    "raspberrypi-4b": 0.9476,
-    "jetson-xavier": 0.4284
-  },
-  1: {
-        "jetson-nano": 4.3067,
-        "raspberrypi-4b": 6.9829,
-        "jetson-xavier": 2.4311
-    },
-  2: {
-    "jetson-nano": 0.6125,
-    "raspberrypi-4b": 1.0468,
-    "jetson-xavier": 0.4719
-  },
-  3: {
-    "jetson-nano": 4.3765,
-    "raspberrypi-4b": 7.1570,
-    "jetson-xavier": 2.6941
-  },
-  4: {
-    "jetson-nano": 0.3247,
-    "raspberrypi-4b": 1000000,
-    "jetson-xavier": 0.09034
-  },
-  5: {
-    "jetson-nano": 0.6914,
-    "raspberrypi-4b": 1000000,
-    "jetson-xavier": 0.2247
-  },
-  6: {
-    "jetson-nano": 0.2760,
-    "raspberrypi-4b": 1000000,
-    "jetson-xavier": 0.09924
-  },
-  7: {
-    "jetson-nano": 0.7468,
-    "raspberrypi-4b": 1000000,
-    "jetson-xavier": 0.25310
-  },
-}
-power_lookup_table = {
-  1: {
-    "jetson-nano": 2916.43,
-    "raspberrypi-4b": 1684.4,
-    "jetson-xavier": 1523.94
-  },
-  0: {
-    "jetson-nano": 1584.53,
-    "raspberrypi-4b": 1174.39,
-    "jetson-xavier": 780.97
-  },
-  3: {
-    "jetson-nano": 2900.08,
-    "raspberrypi-4b": 1694.41,
-    "jetson-xavier": 1540.61
-  },
-  2: {
-    "jetson-nano": 1191.19,
-    "raspberrypi-4b": 1168.31,
-    "jetson-xavier": 803.95
-  },
-    4: {
-    "jetson-nano": 4753.59,
-    "raspberrypi-4b": 3442.17,
-    "jetson-xavier": 2342.97
-  },
-5: {
-    "jetson-nano": 8749.29,
-    "raspberrypi-4b": 5053.2,
-    "jetson-xavier": 4571.82
-  },
-6: {
-    "jetson-nano": 3573.57,
-    "raspberrypi-4b": 3504.93,
-    "jetson-xavier": 2411.55
-  },
-7: {
-    "jetson-nano": 8700.24,
-    "raspberrypi-4b": 5083.23,
-    "jetson-xavier": 4261.83
-  }
-}
+with open(os.path.join(cur_dir, "../status_tracker/power_lookup_table.json"), 'r') as file:
+    power_lookup_table = json.load(file)
 
 # data = {'group':[], 'Objective':[], 'Normalized objective':[], 'time':[], 'algorithm': [], "avg_accuracy": [], "avg_delay": [], "avg_cpu_consumption": [], "avg_memory_consumption": [],"power_consumption": []}
 data = {'group':[], 'Normalized objective':[], 'time':[], 'algorithm': []}
@@ -192,8 +109,8 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
         cpu_consumptions = [0]*len(device_list)
         ram_consumptions = [0]*len(device_list)
         for i, mapping in enumerate(solution):
-            op_id = mapping[0]
-            dev_id = mapping[1]
+            op_id = mapping[1]
+            dev_id = mapping[2]
             op_resource = operator_list[op_id]["requirements"]["system"]
             cpu_consumptions[dev_id] += op_resource["cpu"]
             ram_consumptions[dev_id] += op_resource["memory"]
@@ -246,9 +163,10 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
                 task_object = task_list[i]['object']
                 task_delay = task_list[i]['delay']
                 source_device_id = task_list[i]["source"]
-                op_id = mapping[0]
+                op_global_id = mapping[0]
+                op_id = mapping[1]
                 op_name = operator_list[op_id]["name"]
-                dev_id = mapping[1]
+                dev_id = mapping[2]
                 performance_acc = calculate_accuracy(op_id)
                 performance_delay = calculate_delay(op_id, source_device_id, dev_id)
                 # if performance_delay > task_delay:
@@ -257,7 +175,7 @@ def make_decision_from_task_new(task_list, device_list, transmission_matrix, sol
                 performance_objective = calculate_objective(op_id, source_device_id, dev_id, task_delay)
                 print(f"Data flow {i}:")
                 print(f"Request: source: {source_device_id} object: {task_object}, delay tolerance: {task_delay}")
-                print(f"Deployment: {op_name} -> device {dev_id}")
+                print(f"Deployment: operator {op_global_id}(type: {op_name}) -> device {dev_id}")
                 print(f"Performance: accuracy: {performance_acc}, delay: {performance_delay}, power: {performance_power}, objective: {performance_objective}")
                 print("--------------------------------------------------------------")
             print(f"Decision making time: {elapsed_time} s")
@@ -284,8 +202,8 @@ def main():
     parser = argparse.ArgumentParser(description='test script.')
 
     parser.add_argument('-d', '--num_devices', default=50, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=20, type=float, help='number of requests')
-    parser.add_argument('-s', '--solver', type=str, default='ORTools', help='solver name')
+    parser.add_argument('-r', '--num_requests', default=30, type=float, help='number of requests')
+    parser.add_argument('-s', '--solver', type=str, default='LocalSearch_new', help='solver name')
 
     args = parser.parse_args()
 

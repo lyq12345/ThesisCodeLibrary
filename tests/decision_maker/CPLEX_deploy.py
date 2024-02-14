@@ -1,5 +1,5 @@
 import cplex
-from docplex.mp.model import Model
+
 # Create an instance of a linear problem to solve
 problem = cplex.Cplex()
 

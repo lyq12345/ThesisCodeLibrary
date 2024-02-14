@@ -1,75 +1,17 @@
-import numpy as np
-import math
 import copy
-import random
+import os
 from TOPSIS_deploy import TOPSIS_decider
+import json
 
+cur_dir = os.getcwd()
 
-speed_lookup_table = {
-  0: {
-    "jetson-nano": 0.5520,
-    "raspberrypi-4b": 0.9476,
-    "jetson-xavier": 0.4284
-  },
-  1: {
-        "jetson-nano": 4.3067,
-        "raspberrypi-4b": 6.9829,
-        "jetson-xavier": 2.4311
-    },
-  2: {
-    "jetson-nano": 0.6125,
-    "raspberrypi-4b": 1.0468,
-    "jetson-xavier": 0.4719
-  },
-  3: {
-    "jetson-nano": 4.3765,
-    "raspberrypi-4b": 7.1570,
-    "jetson-xavier": 2.6941
-  },
-  4: {
-    "jetson-nano": 0.3247,
-    "raspberrypi-4b": 1000000,
-    "jetson-xavier": 0.09034
-  },
-  5: {
-    "jetson-nano": 0.6914,
-    "raspberrypi-4b": 1000000,
-    "jetson-xavier": 0.2247
-  },
-  6: {
-    "jetson-nano": 0.2760,
-    "raspberrypi-4b": 1000000,
-    "jetson-xavier": 0.09924
-  },
-  7: {
-    "jetson-nano": 0.7468,
-    "raspberrypi-4b": 1000000,
-    "jetson-xavier": 0.25310
-  },
-}
+speed_lookup_table = None
+power_lookup_table = None
+with open(os.path.join(cur_dir, "../status_tracker/speed_lookup_table.json"), 'r') as file:
+    speed_lookup_table = json.load(file)
 
-power_lookup_table = {
-  "joelee0515/firedetection:yolov3-measure-time": {
-    "jetson-nano": 2916.43,
-    "raspberrypi-4b": 1684.4,
-    "jetson-xavier": 1523.94
-  },
-  "joelee0515/firedetection:tinyyolov3-measure-time": {
-    "jetson-nano": 1584.53,
-    "raspberrypi-4b": 1174.39,
-    "jetson-xavier": 780.97
-  },
-  "joelee0515/humandetection:yolov3-measure-time": {
-    "jetson-nano": 2900.08,
-    "raspberrypi-4b": 1694.41,
-    "jetson-xavier": 1540.61
-  },
-  "joelee0515/humandetection:tinyyolov3-measure-time": {
-    "jetson-nano": 1191.19,
-    "raspberrypi-4b": 1168.31,
-    "jetson-xavier": 803.95
-  }
-}
+with open(os.path.join(cur_dir, "../status_tracker/power_lookup_table.json"), 'r') as file:
+    power_lookup_table = json.load(file)
 
 class LocalSearch_new:
     def __init__(self, tasks, devices, operators, transmission_matrix):
@@ -90,8 +32,8 @@ class LocalSearch_new:
         cpu_consumptions = [0]*len(self.devices)
         ram_consumptions = [0]*len(self.devices)
         for i, mapping in enumerate(solution):
-            op_id = mapping[0]
-            dev_id = mapping[1]
+            op_id = mapping[1]
+            dev_id = mapping[2]
             op_resource = self.operators[op_id]["requirements"]["system"]
             cpu_consumptions[dev_id] += op_resource["cpu"]
             ram_consumptions[dev_id] += op_resource["memory"]
@@ -123,17 +65,19 @@ class LocalSearch_new:
         # replace an active device with a new resource; all operators on it should be moved
         ops_on_devices = [[] for _ in range(len(devices))]
         for task_id, mapping in enumerate(current_solution):
-            op_id = mapping[0]
-            dev_id = mapping[1]
-            ops_on_devices[dev_id].append(op_id)
+            op_global_id = mapping[0]
+            op_id = mapping[1]
+            dev_id = mapping[2]
+            ops_on_devices[dev_id].append([op_global_id, op_id])
         for dev_id, ops in enumerate(ops_on_devices):
-            # find devices that can accommodate all ops on dev_id
-            filtered_dev_ids = [item for item in self.filter_devices_multiop(devices, ops) if item != dev_id]
+            # find other devices that can accommodate all ops on dev_id
+            op_ids = [item[1] for item in ops]
+            filtered_dev_ids = [item for item in self.filter_devices_multiop(devices, op_ids) if item != dev_id]
             for other_dev_id in filtered_dev_ids:
                 new_neighbor = copy.deepcopy(current_solution)
                 for task_id, mapping in enumerate(new_neighbor):
-                    if mapping[1] == dev_id:
-                        new_neighbor[task_id][1] = other_dev_id
+                    if mapping[2] == dev_id:
+                        new_neighbor[task_id][2] = other_dev_id
                 # TODO: effective remove repeatable?
                 if new_neighbor not in neighbors:
                     neighbors.append(new_neighbor)
@@ -141,30 +85,34 @@ class LocalSearch_new:
     def move_operator(self, devices, current_solution, neighbors):
         # move an operator from u to a new v
         for task_id, mapping in enumerate(current_solution):
-            op_id = mapping[0]
-            dev_id = mapping[1]
+            op_global_id = mapping[0]
+            op_id = mapping[1]
+            dev_id = mapping[2]
             filtered_dev_ids = [item for item in self.filter_devices(devices, op_id) if item != dev_id]
             for other_dev_id in filtered_dev_ids:
                 new_neighbor = copy.deepcopy(current_solution)
-                new_neighbor[task_id][1] = other_dev_id
+                new_neighbor[task_id][2] = other_dev_id
                 # TODO: effective remove repeatable?
                 if new_neighbor not in neighbors:
                     neighbors.append(new_neighbor)
 
     def change_operator(self, devices, current_solution, neighbors):
-        # change deployed operators to other compartiable operator
+        # change deployed operators to other compartible operator
         for task_id, mapping in enumerate(current_solution):
-            op_id = mapping[0]
-            dev_id = mapping[1]
+            op_id = mapping[1]
+            dev_id = mapping[2]
             other_op_ids = [item for item in self.get_candidate_operators(task_id) if item != op_id]
             self.undeploy(devices, mapping)
             for other_op_id in other_op_ids:
                 if self.is_system_consistent(devices[dev_id]["resources"]["system"], self.operators[other_op_id]["requirements"]["system"]):
                     new_neighbor = copy.deepcopy(current_solution)
-                    new_neighbor[task_id][0] = other_op_id
+                    new_neighbor[task_id][1] = other_op_id
                     if new_neighbor not in neighbors:
                         neighbors.append(new_neighbor)
             self.deploy(devices, mapping)
+
+    def merge_request(self):
+        pass
 
 
     def get_neighbors(self, current_solution):
@@ -206,7 +154,7 @@ class LocalSearch_new:
             if best_neighbor_utility > best_utility:
                 best_solution = best_neighbor
                 best_utility = best_neighbor_utility
-            else:             # if no improvements made:
+            else:      # if no improvements made:
                 break
 
         return best_solution, best_utility
@@ -228,8 +176,8 @@ class LocalSearch_new:
     def solution_feasible(self, solution):
         device_copy = copy.deepcopy(self.devices)
         for mapping in solution:
-            op_id = mapping[0]
-            dev_id = mapping[1]
+            op_id = mapping[1]
+            dev_id = mapping[2]
             resources = device_copy[dev_id]["resources"]["system"]
             requirements = self.operators[op_id]["requirements"]["system"]
             if not self.is_system_consistent(resources, requirements):
@@ -270,8 +218,8 @@ class LocalSearch_new:
         sum_uti = 0
         for task_id, mapping in enumerate(solution):
             source_device_id = self.tasks[task_id]["source"]
-            operator_id = mapping[0]
-            device_id = mapping[1]
+            operator_id = mapping[1]
+            device_id = mapping[2]
             accuracy = self.operators[operator_id]["accuracy"]
             delay = self.calculate_delay(operator_id, source_device_id, device_id)
             task_del = self.tasks[task_id]["delay"]
@@ -294,8 +242,8 @@ class LocalSearch_new:
         return power
 
     def deploy(self, devices, mapping):
-        operator_id = mapping[0]
-        device_id = mapping[1]
+        operator_id = mapping[1]
+        device_id = mapping[2]
         operator_resource = {}
         for op in self.operators:
             if operator_id == op["id"]:
@@ -305,8 +253,8 @@ class LocalSearch_new:
             devices[device_id]["resources"]["system"][type] -= amount
 
     def undeploy(self, devices, mapping):
-        operator_id = mapping[0]
-        device_id = mapping[1]
+        operator_id = mapping[1]
+        device_id = mapping[2]
         operator_resource = {}
         for op in self.operators:
             if operator_id == op["id"]:
