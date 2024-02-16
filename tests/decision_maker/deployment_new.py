@@ -201,8 +201,8 @@ def main():
 
     parser = argparse.ArgumentParser(description='test script.')
 
-    parser.add_argument('-d', '--num_devices', default=10, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=10, type=float, help='number of requests')
+    parser.add_argument('-d', '--num_devices', default=5, type=int, help='number of devices')
+    parser.add_argument('-r', '--num_requests', default=5, type=float, help='number of requests')
     parser.add_argument('-s', '--solver', type=str, default='ORTools', help='solver name')
 
     args = parser.parse_args()

@@ -15,25 +15,25 @@ local_objective = df[df['algorithm'] == 'LocalSearch']['Normalized objective'].t
 local_new_time = df[df['algorithm'] == 'LocalSearch_new']['time'].tolist()
 local_new_objective = df[df['algorithm'] == 'LocalSearch_new']['Normalized objective'].tolist()
 
-# objective
-plt.plot(x, ortools_objective, label='ORTools', marker='o', linestyle='-')
-plt.plot(x, topsis_objective, label='TOPSIS', marker='o', linestyle='-')
-plt.plot(x, local_objective, label='LocalSearch', marker='o', linestyle='-')
-plt.plot(x, local_new_objective, label='LocalSearch_new', marker='o', linestyle='-')
-
-# Add labels and title
-plt.xlabel('Number of requests')
-plt.ylabel('Objective')
-
-# time
-# plt.plot(x, ortools_time, label='ORTools', marker='o', linestyle='-')
-# plt.plot(x, topsis_time, label='TOPSIS', marker='o', linestyle='-')
-# plt.plot(x, local_time, label='LocalSearch', marker='o', linestyle='-')
-# plt.plot(x, local_new_time, label='LocalSearch_new', marker='o', linestyle='-')
+# # objective
+# plt.plot(x, ortools_objective, label='ORTools', marker='o', linestyle='-')
+# plt.plot(x, topsis_objective, label='TOPSIS', marker='o', linestyle='-')
+# plt.plot(x, local_objective, label='LocalSearch', marker='o', linestyle='-')
+# plt.plot(x, local_new_objective, label='LocalSearch_new', marker='o', linestyle='-')
 #
 # # Add labels and title
 # plt.xlabel('Number of requests')
-# plt.ylabel('Decision Making Time(s)')
+# plt.ylabel('Objective')
+
+# time
+plt.plot(x, ortools_time, label='ORTools', marker='o', linestyle='-')
+plt.plot(x, topsis_time, label='TOPSIS', marker='o', linestyle='-')
+# plt.plot(x, local_time, label='LocalSearch', marker='o', linestyle='-')
+plt.plot(x, local_new_time, label='LocalSearch_new', marker='o', linestyle='-')
+
+# Add labels and title
+plt.xlabel('Number of requests')
+plt.ylabel('Decision Making Time(s)')
 
 # Add a legend
 plt.legend()

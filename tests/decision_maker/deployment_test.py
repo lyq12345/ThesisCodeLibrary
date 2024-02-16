@@ -202,7 +202,7 @@ def main():
     parser = argparse.ArgumentParser(description='test script.')
 
     parser.add_argument('-d', '--num_devices', default=100, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=50, type=float, help='number of requests')
+    parser.add_argument('-r', '--num_requests', default=100, type=float, help='number of requests')
     parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
 
     args = parser.parse_args()

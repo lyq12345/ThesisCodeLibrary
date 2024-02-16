@@ -2,7 +2,8 @@ import numpy as np
 import os
 import json
 from ortools.linear_solver import pywraplp
-
+from ortools.sat.python import cp_model
+import collections
 cur_dir = os.getcwd()
 
 speed_lookup_table = None
@@ -93,19 +94,24 @@ class ORTools_Decider:
     def make_decision(self):
         print("Running ORTools decision maker")
         # Create the SCIP solver
-        solver = pywraplp.Solver.CreateSolver('SCIP')
+        model = cp_model.CpModel()
+
+        microservice_deploy = collections.namedtuple("microservice_deploy", "operator device")
+
 
         W = len(self.workflows)
         M = len(self.microservices_data["microservice_types"])
         O = self.num_operators
         D = self.num_devices
 
-        # Create binary decision variables x_ijk for the binary matrix x
-        x = {}  # x_ijk - microservice i mapping to operator j deployed on device k
-        for i in range(M):
-            for j in range(O):
-                for k in range(D):
-                    x[i, j, k] = solver.IntVar(0, 1, f'x_{i}_{j}_{k}')
+        all_microservices = {}
+
+        for wf_id, workflow in enumerate(self.workflows):
+            for ms_id, ms in enumerate(workflow):
+                suffix = f"_{wf_id, ms_id}"
+                operator_var = model.NewIntVar(0, O, "operator"+suffix)
+                device_var = model.NewIntVar(0, D, "device"+suffix)
+                all_microservices[wf_id, ms_id] = microservice_deploy(operator=operator_var, device=device_var)
 
         # every microservice need to map one operator (two ms can map to 1)
         for i in range(M):
@@ -159,9 +165,9 @@ class ORTools_Decider:
                         for k1 in range(D):
                             for j2 in range(O):
                                 for k2 in range(D):
-                                    workflow_latencies.append(x[ms_id, j1, k1]*self.device_data["transmission_speed"][k1][k2]*x[1-workflow[idx-1],j2,k2])
-            objectives.append(sum(accuracies)/len(workflow))
-            # objectives.append(sum(accuracies)/len(workflow) - max(0,  1-delay_tol / sum(workflow_latencies)))
+                                    workflow_latencies.append(x[ms_id, j1, k1]*self.device_data["transmission_speed"][k1][k2]*x[1-workflow[idx-1],j1,k1])
+            # objectives.append(accuracy/len(workflow) - max(0, 1-delay_tol/workflow_latency))
+            objectives.append(sum(accuracies)/len(workflow) - max(0,  1-delay_tol / sum(workflow_latencies)))
 
         solver.Maximize(solver.Sum(objectives))
 
