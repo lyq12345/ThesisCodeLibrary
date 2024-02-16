@@ -21,16 +21,13 @@ class ORTools_Decider:
         self.workflows = workflows
         self.wf_ms_mapping = [[] for _ in range(len(workflows))]
         self.microservices_data = self.create_microservice_model(workflows)
-        # print(self.wf_ms_mapping)
-        # print(self.microservices_data)
         self.device_data = self.create_device_model(workflows, devices, transmission_matrix)
         self.operator_data = self.create_operator_model(operators)
-        # print(self.device_data)
 
 
 
     def create_microservice_model(self, workflows):
-        data = {"microservice_types": [], "microservice_rates": []}
+        data = {"microservice_types": [], "microservice_rates": [], "parents": []}
         msid_count = 0
         for wf_id, workflow in enumerate(workflows):
             microservices = workflow["workflow"]
@@ -106,6 +103,26 @@ class ORTools_Decider:
                 for k in range(D):
                     x[i, j, k] = solver.IntVar(0, 1, f'x_{i}_{j}_{k}')
 
+        # intermedia variable y[i1,i2,k1,k2] = 1 iff microservice path (i1, i2) is mapped to device path (k1, k2)
+        y = {}
+        for i1 in range(M):
+            for i2 in range(M):
+                for k1 in range(D):
+                    for k2 in range(D):
+                        y[i1, i2, k1, k2] = solver(0, 1, f"y_{i1}_{i2}_{k1}_{k2}")
+
+        for j in range(O):
+            for i1 in range(M):
+                for i2 in range(M):
+                    for k1 in range(D):
+                        solver.Add(x[i1, j, k1] == solver.Sum([y[i1, i2, k1, k2] for k2 in range(D)]))
+
+        for j in range(O):
+            for i1 in range(M):
+                for i2 in range(M):
+                    for k2 in range(D):
+                        solver.Add(x[i2, j, k2] == solver.Sum([y[i1, i2, k1, k2] for k1 in range(D)]))
+
         # every microservice need to map one operator (two ms can map to 1)
         for i in range(M):
             solver.Add(solver.Sum([x[i,j,k] for j in range(O) for k in range(D)]) == 1)
@@ -130,7 +147,6 @@ class ORTools_Decider:
                        self.device_data["resource_capability"][k][resource_id])
 
         # operator rate sum should not exceed operator processing rate
-
         for j in range(O):
             # find the microservices that are mapped to operator j
             for k in range(D):
@@ -141,6 +157,7 @@ class ORTools_Decider:
             workflow_latency = 0
             accuracy = 0
             delay_tol = self.workflows[wf_id]["delay"]
+            for i1 in
             for idx in range(len(workflow)):
                 ms_id = workflow[idx]
                 source_device_id = self.device_data["data_sources"][idx]
