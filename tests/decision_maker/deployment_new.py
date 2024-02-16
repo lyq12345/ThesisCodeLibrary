@@ -15,7 +15,7 @@ from TOPSIS_deploy import TOPSIS_decider
 from LocalSearch_deploy import LocalSearch_deploy
 # from ORTools_deploy import ORTools_Decider
 from new.ORTools_deploy import ORTools_Decider
-from Greedy_deploy import Greedy_decider
+from new.Greedy_deploy import Greedy_decider
 from LocalSearch_new import LocalSearch_new
 
 # from status_tracker.task_mock import generate_tasks
@@ -203,7 +203,7 @@ def main():
 
     parser.add_argument('-d', '--num_devices', default=5, type=int, help='number of devices')
     parser.add_argument('-r', '--num_requests', default=5, type=float, help='number of requests')
-    parser.add_argument('-s', '--solver', type=str, default='ORTools', help='solver name')
+    parser.add_argument('-s', '--solver', type=str, default='Greedy', help='solver name')
 
     args = parser.parse_args()
 
