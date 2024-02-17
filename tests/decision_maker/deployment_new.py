@@ -58,11 +58,6 @@ def print_table(data):
             print(f" {item} |", end="")
         print()
 
-def choose_best_operator(operator_candidates):
-    max_speed_op = max(operator_candidates, key=lambda x: x["speed"])
-    return max_speed_op
-
-
 def generate_transmission_rate_matrix(n, min_rate=1, max_rate=5):
     transmission_matrix = np.full((n, n), np.inf)
 
@@ -78,8 +73,39 @@ def generate_transmission_rate_matrix(n, min_rate=1, max_rate=5):
 
     return transmission_matrix
 
+def create_microservice_model(workflows):
+    ms_num = sum([len(item["workflow"]) for item in workflows])
+    microservices_data = {
+        "microservices_graph": None,
+        "ms_wf_mapping": None,
+        "ms_types": None,
+    }
+    microservices_data["microservices_graph"] = [[0 for _ in range(ms_num)] for _ in range(ms_num)]
+    microservices_data["ms_wf_mapping"] = [[0 for _ in range(len(workflows))] for _ in range(ms_num)] #[ms_id][wf_id]
+    microservices_data["ms_types"] = []
+    ms_count = 0
+    for wf_id, workflow in enumerate(workflows):
+        microservices = workflow["workflow"]
+        for i in range(len(microservices)):
+            ms_type = microservices[i]
+            if i > 0:
+                microservices_data["microservices_graph"][ms_count-1][ms_count] = 1
+            microservices_data["ms_types"].append(ms_type)
+            microservices_data["ms_wf_mapping"][ms_count][wf_id] = 1
+            ms_count += 1
+    return microservices_data
 
-def make_decision_from_task_new(workflow_list, device_list, transmission_matrix, solver="LocalSearch", display=True,
+def create_operator_model(operators, ms_types):
+    operator_candidates = []
+    for type in ms_types:
+        for op_code, op in enumerate(operators):
+            if op["object_code"] == type:
+                operator_candidates.append(op_code)
+    return operator_candidates
+
+
+
+def make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, solver="LocalSearch", display=True,
                                 record=False, iterations=1):
     operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
     operator_list = read_json(operator_file)
@@ -127,15 +153,15 @@ def make_decision_from_task_new(workflow_list, device_list, transmission_matrix,
 
     decision_maker = None
     if solver == "TOPSIS":
-        decision_maker = TOPSIS_decider(workflow_list, device_list, operator_list, transmission_matrix)
+        decision_maker = TOPSIS_decider(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
     elif solver == "LocalSearch":
-        decision_maker = LocalSearch_deploy(workflow_list, device_list, operator_list, transmission_matrix)
+        decision_maker = LocalSearch_deploy(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
     elif solver == "ORTools":
-        decision_maker = ORTools_Decider(workflow_list, device_list, operator_list, transmission_matrix)
+        decision_maker = ORTools_Decider(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
     elif solver == "Greedy":
-        decision_maker = Greedy_decider(workflow_list, device_list, operator_list, transmission_matrix)
+        decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
     elif solver == "LocalSearch_new":
-        decision_maker = LocalSearch_new(workflow_list, device_list, operator_list, transmission_matrix)
+        decision_maker = LocalSearch_new(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
 
     sum_elapsed_time = 0.0
     sum_utility = 0.0
@@ -198,6 +224,8 @@ def main():
     num_devices = 20
     num_requests = 6
     solver = "LocalSearch"
+    operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
+    operator_list = read_json(operator_file)
 
     parser = argparse.ArgumentParser(description='test script.')
 
@@ -213,8 +241,8 @@ def main():
 
     device_list = generate_devices(num_devices)
     workflow_list = generate_workflows(num_requests, device_list)
-    # print(workflow_list)
-    # task_list = generate_tasks(num_requests, device_list)
+    microservice_data = create_microservice_model(workflow_list)
+    operator_data = create_operator_model(operator_list, microservice_data["ms_types"])
     transmission_matrix = generate_transmission_rate_matrix(len(device_list))
 
     table_data = [
@@ -222,29 +250,31 @@ def main():
     ]
 
     if solver == "All":
-        obj_1, time_1 = make_decision_from_task_new(workflow_list, device_list, transmission_matrix, "LocalSearch")
+        obj_1, time_1 = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, "LocalSearch")
         table_data.append(["LocalSearch", obj_1, time_1])
 
-        obj_2, time_2 = make_decision_from_task_new(workflow_list, device_list, transmission_matrix, "LocalSearch_new")
+        obj_2, time_2 = make_decision_from_task_new(workflow_list,microservice_data, operator_data, device_list, transmission_matrix, "LocalSearch_new")
         table_data.append(["LocalSearch_new", obj_2, time_2])
 
-        obj_3, time_3 = make_decision_from_task_new(workflow_list, device_list, transmission_matrix, "TOPSIS")
+        obj_3, time_3 = make_decision_from_task_new(workflow_list,microservice_data, operator_data, device_list, transmission_matrix, "TOPSIS")
         table_data.append(["TOPSIS", obj_3, time_3])
 
-        obj_4, time_4 = make_decision_from_task_new(workflow_list, device_list, transmission_matrix, "ORTools")
+        obj_4, time_4 = make_decision_from_task_new(workflow_list,microservice_data, operator_data, device_list, transmission_matrix, "ORTools")
         table_data.append(["ORTools", obj_4, time_4])
 
         print("Summary:")
         print_table(table_data)
 
     else:
-        obj, time = make_decision_from_task_new(workflow_list, device_list, transmission_matrix, solver)
+        obj, time = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, solver)
         table_data.append([solver, obj, time])
     # make_decision_from_task_new(task_list, device_list, transmission_matrix, "TOPSIS")
     # make_decision_from_task_new(task_list, device_list, transmission_matrix, "MIP")
 
 
 def evaluation_experiments():
+    operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
+    operator_list = read_json(operator_file)
     num_devices = [100]
     num_requests = [i for i in range(1, 21)]
     # num_devices = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
@@ -257,11 +287,13 @@ def evaluation_experiments():
         for j in range(len(num_requests)):
             request_num = num_requests[j]
             device_list = generate_devices(device_num)
-            task_list = generate_workflows(request_num, device_list)
+            workflow_list = generate_workflows(request_num, device_list)
+            microservice_data = create_microservice_model(workflow_list)
+            operator_data = create_operator_model(operator_list, microservice_data["ms_types"])
             transmission_matrix = generate_transmission_rate_matrix(len(device_list))
             for solver in solvers:
                 print(f"Running i={request_num} k={device_num}, solver={solver}")
-                make_decision_from_task_new(task_list, device_list, transmission_matrix, solver, display=False,
+                make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, solver, display=False,
                                             record=True, iterations=10)
 
     # record finishes, save into csv
