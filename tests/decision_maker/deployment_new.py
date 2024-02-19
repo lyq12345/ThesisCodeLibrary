@@ -16,8 +16,11 @@ from LocalSearch_deploy import LocalSearch_deploy
 # from ORTools_deploy import ORTools_Decider
 from new.ORTools_deploy import ORTools_Decider
 from new.Greedy_deploy import Greedy_decider
-from LocalSearch_new import LocalSearch_new
-
+from new.LocalSearch_deploy import LocalSearch_new
+from pathlib import Path
+import sys
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+from status_tracker.rescons_models import cpu_consumption
 # from status_tracker.task_mock import generate_tasks
 from status_tracker.workflow_mock import generate_workflows
 from status_tracker.device_mock import generate_devices
@@ -110,8 +113,8 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
     operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
     operator_list = read_json(operator_file)
 
-    def calculate_accuracy(operator_id):
-        return operator_list[operator_id]["accuracy"]
+    def calculate_accuracy(op_code):
+        return operator_list[op_code]["accuracy"]
 
     def calculate_delay(operator_id, source_device_id, device_id):
         device_model = device_list[device_id]["model"]
@@ -134,22 +137,34 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
     def calculate_resource_consumption(solution):
         cpu_consumptions = [0] * len(device_list)
         ram_consumptions = [0] * len(device_list)
+        cpu_sum = 0.0
+        memory_sum = 0.0
+        for dev in device_list:
+            cpu_sum += dev["resources"]["system"]["cpu"]
+            memory_sum += dev["resources"]["system"]["memory"]
+        deployed_op_ids = []
         for i, mapping in enumerate(solution):
             op_id = mapping[0]
-            dev_id = mapping[1]
-            op_resource = operator_list[op_id]["requirements"]["system"]
-            cpu_consumptions[dev_id] += op_resource["cpu"]
+            if op_id in deployed_op_ids:
+                continue
+            op_code = mapping[1]
+            dev_id = mapping[2]
+            dev_name = device_list[dev_id]["model"]
+            op_load = mapping[3]
+
+            op_resource = operator_list[op_code]["requirements"]["system"]
+            cpu_cons = cpu_consumption(op_code, dev_name, op_load)
+            cpu_consumptions[dev_id] += cpu_cons
             ram_consumptions[dev_id] += op_resource["memory"]
-        for i in range(len(cpu_consumptions)):
-            cpu_consumptions[i] = cpu_consumptions[i] / device_list[i]["resources"]["system"]["cpu"]
-            ram_consumptions[i] = ram_consumptions[i] / device_list[i]["resources"]["system"]["memory"]
-        print("CPU consumptions: ")
-        print(cpu_consumptions)
-        print("Memory consumptions:")
-        print(ram_consumptions)
+            deployed_op_ids.append(op_id)
+
         avg_cpu_consumption = sum(cpu_consumptions) / len(cpu_consumptions)
         avg_ram_consumption = sum(ram_consumptions) / len(ram_consumptions)
-        return avg_cpu_consumption, avg_ram_consumption
+        print(cpu_consumptions)
+        cpu_percentage = sum(cpu_consumptions) / cpu_sum
+
+        memory_percentage = sum(ram_consumptions) / memory_sum
+        return cpu_percentage, memory_percentage
 
     decision_maker = None
     if solver == "TOPSIS":
@@ -158,10 +173,19 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
         decision_maker = LocalSearch_deploy(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
     elif solver == "ORTools":
         decision_maker = ORTools_Decider(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
-    elif solver == "Greedy":
-        decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
+    # elif solver == "Greedy":
+    #     decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
     elif solver == "LocalSearch_new":
         decision_maker = LocalSearch_new(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
+    elif solver == "Greedy_accfirst":
+        decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
+                                     transmission_matrix,"accfirst" )
+    elif solver == "Greedy_delayfirst":
+        decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
+                                     transmission_matrix,"delayfirst" )
+    elif solver == "Greedy_multi":
+        decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
+                                     transmission_matrix, "multi" )
 
     sum_elapsed_time = 0.0
     sum_utility = 0.0
@@ -184,30 +208,50 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
 
         if display:
             print("Solution: ")
-            for i, mapping in enumerate(solution):
-                task_object = workflow_list[i]['object']
-                task_delay = workflow_list[i]['delay']
-                source_device_id = workflow_list[i]["source"]
-                op_id = mapping[0]
-                op_name = operator_list[op_id]["name"]
-                dev_id = mapping[1]
-                performance_acc = calculate_accuracy(op_id)
-                performance_delay = calculate_delay(op_id, source_device_id, dev_id)
-                # if performance_delay > task_delay:
-                #     delay_deviation_sum += round((performance_delay-task_delay)/task_delay, 2)
-                performance_power = calculate_power(op_id, dev_id)
-                performance_objective = calculate_objective(op_id, source_device_id, dev_id, task_delay)
-                print(f"Data flow {i}:")
-                print(f"Request: source: {source_device_id} object: {task_object}, delay tolerance: {task_delay}")
-                print(f"Deployment: {op_name} -> device {dev_id}")
+            ms_id = 0
+            utility_sum = 0.0
+            for wf_id, workflow in enumerate(workflow_list):
+                microservices = workflow["workflow"]
+                delay_tol = workflow["delay"]
+                rate = workflow["rate"]
+                source_device_id = workflow["source"]
+                accuracy = 1.0
+                workflow_latency = 0.0
+                for i in range(len(microservices)):
+                    mapping = solution[ms_id]
+                    op_code = mapping[1]
+                    dev_id = mapping[2]
+                    dev_name = device_list[dev_id]["model"]
+
+                    operator_acc = operator_list[op_code]["accuracy"]
+                    accuracy *= operator_acc
+                    operator_latency = speed_lookup_table[op_code][dev_name]
+                    workflow_latency += operator_latency
+
+                    if i == 0:
+                        workflow_latency += transmission_matrix[source_device_id][dev_id]
+                    else:
+                        previous_dev_id = solution[ms_id-1][2]
+                        workflow_latency += transmission_matrix[previous_dev_id][dev_id]
+                    # if performance_delay > task_delay:
+                    #     delay_deviation_sum += round((performance_delay-task_delay)/task_delay, 2)
+                    # performance_power = calculate_power(op_id, dev_id)
+                    # performance_objective = calculate_objective(op_id, source_device_id, dev_id, task_delay)
+                    ms_id += 1
+                utility = 0.12*accuracy - 0.88*max(0, (workflow_latency-delay_tol)/workflow_latency)
+                utility_sum += utility
+                print(f"Workflow {wf_id}:")
+                print(f"Request: source: {source_device_id} microservices: {microservices}, delay tolerance: {delay_tol}")
+                # print(f"Deployment: {op_name} -> device {dev_id}")
                 print(
-                    f"Performance: accuracy: {performance_acc}, delay: {performance_delay}, power: {performance_power}, objective: {performance_objective}")
+                    f"Performance: accuracy: {accuracy}, latency: {workflow_latency}, utility: {utility}")
                 print("--------------------------------------------------------------")
             print(f"Decision making time: {elapsed_time} s")
-            calculate_resource_consumption(solution)
-            # print(f"Accuracy deviation: {acc_deviation_sum / len(task_list)}")
-            # print(f"Delay deviation: {delay_deviation_sum / len(task_list)}")
-            print(f"Overall Objective: {utility}")
+            print("Resource consumption: ")
+            cpu_usage, memory_usage = calculate_resource_consumption(solution)
+            print(f"CPU Usage: {cpu_usage}")
+            print(f"Memory Usage: {memory_usage}")
+            print(f"Overall Objective: {utility_sum}")
 
     if record:
         avg_nol_objective = (sum_utility / iterations) / len(workflow_list)
@@ -229,9 +273,9 @@ def main():
 
     parser = argparse.ArgumentParser(description='test script.')
 
-    parser.add_argument('-d', '--num_devices', default=5, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=5, type=float, help='number of requests')
-    parser.add_argument('-s', '--solver', type=str, default='Greedy', help='solver name')
+    parser.add_argument('-d', '--num_devices', default=20, type=int, help='number of devices')
+    parser.add_argument('-r', '--num_requests', default=30, type=float, help='number of requests')
+    parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
 
     args = parser.parse_args()
 
@@ -250,18 +294,20 @@ def main():
     ]
 
     if solver == "All":
-        obj_1, time_1 = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, "LocalSearch")
-        table_data.append(["LocalSearch", obj_1, time_1])
+        obj_1, time_1 = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, "Greedy_accfirst")
+        table_data.append(["Greedy_accfirst", obj_1, time_1])
 
-        obj_2, time_2 = make_decision_from_task_new(workflow_list,microservice_data, operator_data, device_list, transmission_matrix, "LocalSearch_new")
-        table_data.append(["LocalSearch_new", obj_2, time_2])
+        obj_2, time_2 = make_decision_from_task_new(workflow_list,microservice_data, operator_data, device_list, transmission_matrix, "Greedy_delayfirst")
+        table_data.append(["Greedy_delayfirst", obj_2, time_2])
 
-        obj_3, time_3 = make_decision_from_task_new(workflow_list,microservice_data, operator_data, device_list, transmission_matrix, "TOPSIS")
-        table_data.append(["TOPSIS", obj_3, time_3])
+        obj_3, time_3 = make_decision_from_task_new(workflow_list,microservice_data, operator_data, device_list, transmission_matrix, "Greedy_multi")
+        table_data.append(["Greedy_multi", obj_3, time_3])
 
-        obj_4, time_4 = make_decision_from_task_new(workflow_list,microservice_data, operator_data, device_list, transmission_matrix, "ORTools")
-        table_data.append(["ORTools", obj_4, time_4])
+        # obj_4, time_4 = make_decision_from_task_new(workflow_list,microservice_data, operator_data, device_list, transmission_matrix, "ORTools")
+        # table_data.append(["ORTools", obj_4, time_4])
 
+        obj_4, time_4 = make_decision_from_task_new(workflow_list,microservice_data, operator_data, device_list, transmission_matrix, "LocalSearch_new")
+        table_data.append(["LocalSearch_new", obj_4, time_4])
         print("Summary:")
         print_table(table_data)
 

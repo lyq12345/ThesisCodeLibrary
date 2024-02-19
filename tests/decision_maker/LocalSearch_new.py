@@ -32,9 +32,9 @@ class LocalSearch_new:
         cpu_consumptions = [0]*len(self.devices)
         ram_consumptions = [0]*len(self.devices)
         for i, mapping in enumerate(solution):
-            op_id = mapping[1]
+            op_code = mapping[1]
             dev_id = mapping[2]
-            op_resource = self.operators[op_id]["requirements"]["system"]
+            op_resource = self.operators[op_code]["requirements"]["system"]
             cpu_consumptions[dev_id] += op_resource["cpu"]
             ram_consumptions[dev_id] += op_resource["memory"]
         for i in range(len(cpu_consumptions)):

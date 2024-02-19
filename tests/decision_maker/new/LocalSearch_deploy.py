@@ -1,7 +1,11 @@
 import copy
 import os
-from TOPSIS_deploy import TOPSIS_decider
 import json
+from pathlib import Path
+import sys
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+from status_tracker.rescons_models import cpu_consumption
+from tests.decision_maker.new.Greedy_deploy import Greedy_decider
 
 cur_dir = os.getcwd()
 
@@ -14,27 +18,59 @@ with open(os.path.join(cur_dir, "../status_tracker/power_lookup_table.json"), 'r
     power_lookup_table = json.load(file)
 
 class LocalSearch_new:
-    def __init__(self, tasks, devices, operators, transmission_matrix):
-        self.tasks = tasks
+    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix):
+        self.workflows = workflows
+        self.microservice_data = microservice_data
+        """
+        microservices_data = {
+            "microservices_graph": None,
+            "ms_wf_mapping": None,
+            "ms_types": None,
+        }
+        """
+        self.ms_to_wf = []
+        for wf_id, workflow in enumerate(workflows):
+            microservices = workflow["workflow"]
+            for _ in microservices:
+                self.ms_to_wf.append(wf_id)
         self.devices = copy.deepcopy(devices)
-        self.operators = operators
+        self.operator_data = operator_data
+        self.operator_profiles = operators
+        self.operator_loads = [0 for _ in range(len(operator_data))]
+
         self.transmission_matrix = transmission_matrix
 
-    def get_candidate_operators(self, task_id):
-        object_code = self.tasks[task_id]["object_code"]
-        candidate_operators = []
-        for op in self.operators:
-            if op["object_code"] == object_code:
-                candidate_operators.append(op)
-        candidate_op_ids = [d["id"] for d in candidate_operators]
-        return candidate_op_ids
+    def get_peer_operators(self, service_code, dev_name, op_load):
+        candidate_op_codes = []
+        for op in self.operator_profiles:
+            if op["object_code"] == service_code:
+                if op_load <= 1/speed_lookup_table[op["id"]][dev_name]:
+                    candidate_op_codes.append(op["id"])
+
+        return candidate_op_codes
+
+    def operator_reusable(self, devices, mapping, rate):
+        op_id = mapping[0]
+        op_code = mapping[1]
+        dev_id = mapping[2]
+        dev_name = devices[dev_id]["model"]
+        # find operator op_id's load
+        operator_load = mapping[3]
+        new_load = operator_load + rate
+        if new_load > 1/speed_lookup_table[op_code][dev_name]:
+            return False
+        cpu_extra = cpu_consumption(op_code, dev_name, new_load)-cpu_consumption(op_code, dev_name, operator_load)
+        if devices[dev_id]["resources"]["system"]["cpu"]<cpu_extra:
+            return False
+
+        return True
     def calculate_resource_consumption(self, solution):
         cpu_consumptions = [0]*len(self.devices)
         ram_consumptions = [0]*len(self.devices)
         for i, mapping in enumerate(solution):
             op_id = mapping[1]
             dev_id = mapping[2]
-            op_resource = self.operators[op_id]["requirements"]["system"]
+            op_resource = self.operator_profiles[op_id]["requirements"]["system"]
             cpu_consumptions[dev_id] += op_resource["cpu"]
             ram_consumptions[dev_id] += op_resource["memory"]
         for i in range(len(cpu_consumptions)):
@@ -44,6 +80,7 @@ class LocalSearch_new:
         print(cpu_consumptions)
         print("Memory consumptions:")
         print(ram_consumptions)
+
 
     def initial_solution(self):
         # devices_copy = copy.deepcopy(self.devices)
@@ -56,105 +93,189 @@ class LocalSearch_new:
         #     self.deploy(devices_copy, (selected_op_id, selected_device_id))
         #     self.solution[task_id] = (selected_op_id, selected_device_id)
 
-        topsis_decider = TOPSIS_decider(self.tasks, self.devices, self.operators, self.transmission_matrix)
-        init_solution, init_utility = topsis_decider.make_decision(display=False)
-        self.calculate_resource_consumption(init_solution)
+        greedy_decider = Greedy_decider(self.workflows, self.microservice_data, self.operator_data, self.devices, self.operator_profiles, self.transmission_matrix, "multi" )
+        init_solution, init_utility = greedy_decider.make_decision(display=False)
+        # self.calculate_resource_consumption(init_solution)
         return init_solution
 
     def swap_resource(self, devices, current_solution, neighbors):
         # replace an active device with a new resource; all operators on it should be moved
         ops_on_devices = [[] for _ in range(len(devices))]
-        for task_id, mapping in enumerate(current_solution):
-            op_global_id = mapping[0]
-            op_id = mapping[1]
+        traversed_op_ids = []
+        for mapping in current_solution:
+            op_id = mapping[0]
+            op_code = mapping[1]
             dev_id = mapping[2]
-            ops_on_devices[dev_id].append([op_global_id, op_id])
+            op_load = mapping[3]
+            if op_id not in traversed_op_ids:
+                ops_on_devices[dev_id].append([op_id, op_code, op_load])
+                traversed_op_ids.append(op_id)
         for dev_id, ops in enumerate(ops_on_devices):
             # find other devices that can accommodate all ops on dev_id
-            op_ids = [item[1] for item in ops]
-            filtered_dev_ids = [item for item in self.filter_devices_multiop(devices, op_ids) if item != dev_id]
+            filtered_dev_ids = [item for item in self.filter_devices_multiop(devices, ops) if item != dev_id]
             for other_dev_id in filtered_dev_ids:
                 new_neighbor = copy.deepcopy(current_solution)
-                for task_id, mapping in enumerate(new_neighbor):
+                for ms_id, mapping in enumerate(new_neighbor):
                     if mapping[2] == dev_id:
-                        new_neighbor[task_id][2] = other_dev_id
+                        new_neighbor[ms_id][2] = other_dev_id
                 # TODO: effective remove repeatable?
                 if new_neighbor not in neighbors:
                     neighbors.append(new_neighbor)
 
     def move_operator(self, devices, current_solution, neighbors):
         # move an operator from u to a new v
-        for task_id, mapping in enumerate(current_solution):
-            op_global_id = mapping[0]
-            op_id = mapping[1]
+        moved_op_ids = []
+        for mapping in current_solution:
+            op_id = mapping[0]
+            if op_id in moved_op_ids:
+                continue
+            op_code = mapping[1]
             dev_id = mapping[2]
-            filtered_dev_ids = [item for item in self.filter_devices(devices, op_id) if item != dev_id]
+            op_load = mapping[3]
+            filtered_dev_ids = [item for item in self.filter_devices(devices, (op_id, op_code, op_load)) if item != dev_id]
             for other_dev_id in filtered_dev_ids:
                 new_neighbor = copy.deepcopy(current_solution)
-                new_neighbor[task_id][2] = other_dev_id
+                for mapping in new_neighbor:
+                    if mapping[0] == op_id:
+                        mapping[2] = other_dev_id
                 # TODO: effective remove repeatable?
                 if new_neighbor not in neighbors:
                     neighbors.append(new_neighbor)
+            moved_op_ids.append(op_id)
 
     def change_operator(self, devices, current_solution, neighbors):
         # change deployed operators to other compartible operator
-        for task_id, mapping in enumerate(current_solution):
-            op_id = mapping[1]
+        changed_op_ids = []
+        for ms_id, mapping in enumerate(current_solution):
+            device_copy = copy.deepcopy(devices)
+            op_id = mapping[0]
+            if op_id in changed_op_ids:
+                continue
+            op_code = mapping[1]
             dev_id = mapping[2]
-            other_op_ids = [item for item in self.get_candidate_operators(task_id) if item != op_id]
-            self.undeploy(devices, mapping)
-            for other_op_id in other_op_ids:
-                if self.is_system_consistent(devices[dev_id]["resources"]["system"], self.operators[other_op_id]["requirements"]["system"]):
+            dev_name = device_copy[dev_id]["model"]
+            op_load = mapping[3]
+            service_code = self.microservice_data["ms_types"][ms_id]
+            # get peer operators that can hold the loads
+            other_op_codes = [item for item in self.get_peer_operators(service_code, dev_name, op_load) if item != op_code]
+            self.undeploy(device_copy, mapping)
+            for other_op_code in other_op_codes:
+                resource_requirements = self.operator_profiles[other_op_code]["requirements"]["system"]
+                resource_requirements["cpu"] = cpu_consumption(other_op_code, dev_name, op_load)
+                if self.is_system_consistent(device_copy[dev_id]["resources"]["system"], resource_requirements):
                     new_neighbor = copy.deepcopy(current_solution)
-                    new_neighbor[task_id][1] = other_op_id
+                    for mapping in current_solution:
+                        if mapping[0] == op_id:
+                            mapping[1] = other_op_code
                     if new_neighbor not in neighbors:
                         neighbors.append(new_neighbor)
-            self.deploy(devices, mapping)
+            changed_op_ids.append(op_id)
 
-    def merge_request(self):
-        pass
+    def merge_microservices(self, devices, current_solution, neighbors):
+        # merge the same type of microservices
+        # for each microservice, try to reuse other's operator
+        same_microservices = {}
+        # categorize microservices
+        for ms_id, mapping in enumerate(current_solution):
+            op_id = mapping[0]
+            service_code = self.microservice_data["ms_types"][ms_id]
+            if service_code not in same_microservices.keys():
+                same_microservices[service_code] = {}
+            if mapping[0] not in same_microservices[service_code].keys():
+                same_microservices[service_code][op_id] = []
+            same_microservices[service_code][op_id].append(ms_id)
+        """
+        for microservices with same type:
+            find another operator
+        """
+        for ms_id, mapping in enumerate(current_solution):
+            service_code = self.microservice_data["ms_types"][ms_id]
+            # find the rate for this microservice
+            oprator_ids = [item for item in same_microservices[service_code].keys() if item != mapping[0]]
+            for other_op_id in oprator_ids:
+                other_index = same_microservices[service_code][other_op_id][0]
+                other_mapping = current_solution[other_index]
+                wf_id = self.ms_to_wf[ms_id]
+                rate = self.workflows[wf_id]["rate"]
+                if self.operator_reusable(devices, other_mapping, rate):
+                    new_neighbor = copy.deepcopy(current_solution)
+                    new_neighbor[ms_id] = other_mapping
+                    for mapping in new_neighbor:
+                        if mapping[0] == other_op_id:
+                            mapping[3] += rate
+                    if new_neighbor not in neighbors:
+                        neighbors.append(new_neighbor)
 
-
-    def get_neighbors(self, current_solution):
+    def improve_solution(self, current_solution, strategy):
         """
         exploration strategies:
         1) swap resources: replace an active device u with a new one v
         2) relocate operator: relocate a single operator i from its location u to a new device v
         3) change operator: change operator i on a device u to operator j that does the same thing
-        4) merge tasks with same type of requests
+        4) microservice reuse: merge microservices with same type of requests
         """
         # moving one operator to another device; change to another operator
+        best_neighbor = current_solution
+        best_neighbor_utility = self.calculate_utility(current_solution)
+
         device_copy = copy.deepcopy(self.devices)
         # consume the devices
+        deployed_op_ids = []
         for mapping in current_solution:
+            if mapping[0] in deployed_op_ids:
+                continue
             self.deploy(device_copy, mapping)
+            deployed_op_ids.append(mapping[0])
         # print("current solution: ", current_solution)
 
         neighbors = []
-        self.swap_resource(device_copy, current_solution, neighbors)
-        self.move_operator(device_copy, current_solution, neighbors)
-        self.change_operator(device_copy, current_solution, neighbors)
+        if strategy == 1:
+            new_device_copy = copy.deepcopy(device_copy)
+            self.swap_resource(new_device_copy, current_solution, neighbors)
+        elif strategy == 2:
+            new_device_copy = copy.deepcopy(device_copy)
+            self.move_operator(new_device_copy, current_solution, neighbors)
+        elif strategy == 3:
+            new_device_copy = copy.deepcopy(device_copy)
+            self.change_operator(new_device_copy, current_solution, neighbors)
+        else:
+            new_device_copy = copy.deepcopy(device_copy)
+            self.merge_microservices(new_device_copy, current_solution, neighbors)
 
-        return neighbors
+        for neighbor in neighbors:
+            neighbor_utility = self.calculate_utility(neighbor)
+            if neighbor_utility > best_neighbor_utility:
+                # self.calculate_resource_consumption(neighbor)
+                best_neighbor_utility = neighbor_utility
+                best_neighbor = neighbor
+
+        return best_neighbor, best_neighbor_utility
 
     def local_search(self):
         best_solution = self.initial_solution()
         best_utility = self.calculate_utility(best_solution)
         while True:
-            best_neighbor_utility = best_utility
-            best_neighbor = best_solution
-            neighbors = self.get_neighbors(best_solution)
-            # find the best neighbor
-            for neighbor in neighbors:
-                neighbor_utility = self.calculate_utility(neighbor)
-                if neighbor_utility > best_neighbor_utility:
-                    # self.calculate_resource_consumption(neighbor)
-                    best_neighbor_utility = neighbor_utility
-                    best_neighbor = neighbor
+            current_best_utility = self.calculate_utility(best_solution)
+            best_neighbor, best_neighbor_utility = self.improve_solution(best_solution, 1)
             if best_neighbor_utility > best_utility:
                 best_solution = best_neighbor
                 best_utility = best_neighbor_utility
-            else:      # if no improvements made:
+            best_neighbor, best_neighbor_utility = self.improve_solution(best_solution, 2)
+            # TODO: This will lower the search
+            # if best_neighbor_utility > best_utility:
+            #     best_solution = best_neighbor
+            #     best_utility = best_neighbor_utility
+            # best_neighbor, best_neighbor_utility = self.improve_solution(best_solution, 3)
+            # TODO: this cause resource bugs
+            # if best_neighbor_utility > best_utility:
+            #     best_solution = best_neighbor
+            #     best_utility = best_neighbor_utility
+            # best_neighbor, best_neighbor_utility = self.improve_solution(best_solution, 4)
+            if best_neighbor_utility > best_utility:
+                best_solution = best_neighbor
+                best_utility = best_neighbor_utility
+
+            if best_utility <= current_best_utility: # if no improvements made:
                 break
 
         return best_solution, best_utility
@@ -179,7 +300,7 @@ class LocalSearch_new:
             op_id = mapping[1]
             dev_id = mapping[2]
             resources = device_copy[dev_id]["resources"]["system"]
-            requirements = self.operators[op_id]["requirements"]["system"]
+            requirements = self.operator_profiles[op_id]["requirements"]["system"]
             if not self.is_system_consistent(resources, requirements):
                 return False
             else:
@@ -187,28 +308,36 @@ class LocalSearch_new:
         return True
 
 
-    def filter_devices(self, devices, operator_id):
+    def filter_devices(self, devices, operator):
+        op_code = operator[1]
+        op_load = operator[2]
         filtered_devices = []
-        operator = self.operators[operator_id]
         for dev in devices:
-            if self.is_system_consistent(dev["resources"]["system"], operator["requirements"]["system"]):
+            dev_name = dev["model"]
+            resource_requirements = self.operator_profiles[op_code]["requirements"]["system"]
+            resource_requirements["cpu"] = cpu_consumption(op_code, dev_name, op_load)
+            if self.is_system_consistent(dev["resources"]["system"], resource_requirements):
                 filtered_devices.append(dev)
         filtered_device_ids = [d["id"] for d in filtered_devices]
         return filtered_device_ids
 
-    def filter_devices_multiop(self, devices, operator_ids):
+    def filter_devices_multiop(self, devices, operators):
         filtered_devices = []
         for dev in devices:
+            dev_name = dev["model"]
             accumulated_resources = {
                 "cpu": 0,
-                 "gpu": 0,
+                "gpu": 0,
                 "storage": 0,
                 "memory": 0
             }
-            for op_id in operator_ids:
-                operator = self.operators[op_id]
+            for op_id, op_code, op_load in operators:
+                operator = self.operator_profiles[op_code]
                 for key, value in operator["requirements"]["system"].items():
-                    accumulated_resources[key] += value
+                    if key != "cpu":
+                        accumulated_resources[key] += value
+                    else:
+                        accumulated_resources[key] += cpu_consumption(op_code, dev_name, op_load)
             if self.is_system_consistent(dev["resources"]["system"], accumulated_resources):
                 filtered_devices.append(dev)
         filtered_device_ids = [d["id"] for d in filtered_devices]
@@ -216,24 +345,31 @@ class LocalSearch_new:
 
     def calculate_utility(self, solution):
         sum_uti = 0
-        for task_id, mapping in enumerate(solution):
-            source_device_id = self.tasks[task_id]["source"]
-            operator_id = mapping[1]
-            device_id = mapping[2]
-            accuracy = self.operators[operator_id]["accuracy"]
-            delay = self.calculate_delay(operator_id, source_device_id, device_id)
-            task_del = self.tasks[task_id]["delay"]
-            utility = accuracy - max(0, (delay - task_del)/delay)
+        ms_id = 0
+        for wf_id, workflow in enumerate(self.workflows):
+            source_device_id = workflow["source"]
+            delay_tol = workflow["delay"]
+            accuracy = 1
+            delay = 0
+
+            for i in range(len(workflow["workflow"])):
+                mapping = solution[ms_id]
+                op_code = mapping[1]
+                dev_id = mapping[2]
+                dev_name = self.devices[dev_id]["model"]
+                op_accuracy = self.operator_profiles[op_code]["accuracy"]
+                accuracy *= op_accuracy
+                operator_delay = speed_lookup_table[op_code][dev_name]
+                delay += operator_delay
+                if i == 0:  # the first microservice
+                    delay += self.transmission_matrix[source_device_id][dev_id]
+                else:
+                    previous_dev_id = solution[ms_id - 1][2]
+                    delay += self.transmission_matrix[previous_dev_id][dev_id]
+                ms_id += 1
+            utility = 0.12 * accuracy - 0.88 * max(0, (delay - delay_tol) / delay)
             sum_uti += utility
-        cost = sum_uti
-        return cost
-
-
-    def calculate_delay(self, operator_id, source_device_id, device_id):
-        device_model = self.devices[device_id]["model"]
-        transmission_delay = self.transmission_matrix[source_device_id, device_id]
-        processing_delay = speed_lookup_table[operator_id][device_model]
-        return transmission_delay + processing_delay
+        return sum_uti
 
     def calculate_power(self, operator, device_id):
         operator_name = operator["name"]
@@ -242,26 +378,26 @@ class LocalSearch_new:
         return power
 
     def deploy(self, devices, mapping):
-        operator_id = mapping[1]
-        device_id = mapping[2]
-        operator_resource = {}
-        for op in self.operators:
-            if operator_id == op["id"]:
-                operator_resource = op["requirements"]["system"]
+        op_code = mapping[1]
+        dev_id = mapping[2]
+        dev_name = self.devices[dev_id]["model"]
+        op_load = mapping[3]
+        resource_requirements = self.operator_profiles[op_code]["requirements"]["system"]
+        resource_requirements["cpu"] = cpu_consumption(op_code, dev_name, op_load)
 
-        for type, amount in operator_resource.items():
-            devices[device_id]["resources"]["system"][type] -= amount
+        for type, amount in resource_requirements.items():
+            devices[dev_id]["resources"]["system"][type] -= amount
 
     def undeploy(self, devices, mapping):
-        operator_id = mapping[1]
-        device_id = mapping[2]
-        operator_resource = {}
-        for op in self.operators:
-            if operator_id == op["id"]:
-                operator_resource = op["requirements"]["system"]
+        op_code = mapping[1]
+        dev_id = mapping[2]
+        dev_name = self.devices[dev_id]["model"]
+        op_load = mapping[3]
+        resource_requirements = self.operator_profiles[op_code]["requirements"]["system"]
+        resource_requirements["cpu"] = cpu_consumption(op_code, dev_name, op_load)
 
-        for type, amount in operator_resource.items():
-            devices[device_id]["resources"]["system"][type] += amount
+        for type, amount in resource_requirements.items():
+            devices[dev_id]["resources"]["system"][type] += amount
 
     def make_decision(self):
         print("Running Local Search New decision maker")

@@ -18,8 +18,6 @@ def generate_workflows(num_workflows, device_list):
         if len(dev["resources"]["hardware"]) > 0:
             sensor_list.append(dev["id"])
 
-    # the number of sensors should be the same as workflows
-    sensor_random_selection = random.sample(sensor_list, num_workflows)
     final_workflows = []
 
     # workflow_list = []
@@ -27,17 +25,13 @@ def generate_workflows(num_workflows, device_list):
     #     sample = random.choice(workflow_templates)
     #     workflow_list.append(sample)
 
-    count = 0
-
-    # each sensor randomly pick up a sensor as data source
-    for sensor_id in sensor_random_selection:
+    for i in range(num_workflows):
         workflow = random.choice(workflow_templates)
         delay = random.uniform(1.0, 10.0)
-        # print(delay)
+        sensor_id = random.choice(sensor_list)
         rate = device_list[sensor_id]["resources"]["hardware"][0]["rate"]
         size = device_list[sensor_id]["resources"]["hardware"][0]["size"]
-        data = {"id": count, "source": sensor_id, "rate": rate, "size": size, "workflow": workflow, "delay": delay}
-        count += 1
+        data = {"id": i, "source": sensor_id, "rate": rate, "size": size, "workflow": workflow, "delay": delay}
         final_workflows.append(data)
 
     return final_workflows
