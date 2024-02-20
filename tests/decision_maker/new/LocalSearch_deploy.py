@@ -65,21 +65,37 @@ class LocalSearch_new:
 
         return True
     def calculate_resource_consumption(self, solution):
-        cpu_consumptions = [0]*len(self.devices)
-        ram_consumptions = [0]*len(self.devices)
+        cpu_consumptions = [0] * len(self.devices)
+        ram_consumptions = [0] * len(self.devices)
+        cpu_sum = 0.0
+        memory_sum = 0.0
+        for dev in self.devices:
+            cpu_sum += dev["resources"]["system"]["cpu"]
+            memory_sum += dev["resources"]["system"]["memory"]
+        deployed_op_ids = []
         for i, mapping in enumerate(solution):
-            op_id = mapping[1]
+            op_id = mapping[0]
+            if op_id in deployed_op_ids:
+                continue
+            op_code = mapping[1]
             dev_id = mapping[2]
-            op_resource = self.operator_profiles[op_id]["requirements"]["system"]
-            cpu_consumptions[dev_id] += op_resource["cpu"]
+            dev_name = self.devices[dev_id]["model"]
+            op_load = mapping[3]
+
+            op_resource = self.operator_profiles[op_code]["requirements"]["system"]
+            cpu_cons = cpu_consumption(op_code, dev_name, op_load)
+            cpu_consumptions[dev_id] += cpu_cons
             ram_consumptions[dev_id] += op_resource["memory"]
-        for i in range(len(cpu_consumptions)):
-            cpu_consumptions[i] = cpu_consumptions[i] / self.devices[i]["resources"]["system"]["cpu"]
-            ram_consumptions[i] = ram_consumptions[i] / self.devices[i]["resources"]["system"]["memory"]
-        print("CPU consumptions: ")
-        print(cpu_consumptions)
-        print("Memory consumptions:")
-        print(ram_consumptions)
+            deployed_op_ids.append(op_id)
+
+        avg_cpu_consumption = sum(cpu_consumptions) / len(cpu_consumptions)
+        avg_ram_consumption = sum(ram_consumptions) / len(ram_consumptions)
+        # print(cpu_consumptions)
+        # print(ram_consumptions)
+        cpu_percentage = sum(cpu_consumptions) / cpu_sum
+
+        memory_percentage = sum(ram_consumptions) / memory_sum
+        return cpu_percentage, memory_percentage
 
 
     def initial_solution(self):
@@ -147,24 +163,28 @@ class LocalSearch_new:
         # change deployed operators to other compartible operator
         changed_op_ids = []
         for ms_id, mapping in enumerate(current_solution):
-            device_copy = copy.deepcopy(devices)
+            # device_copy = copy.deepcopy(devices)
             op_id = mapping[0]
             if op_id in changed_op_ids:
                 continue
             op_code = mapping[1]
             dev_id = mapping[2]
-            dev_name = device_copy[dev_id]["model"]
+            dev_name = devices[dev_id]["model"]
             op_load = mapping[3]
             service_code = self.microservice_data["ms_types"][ms_id]
             # get peer operators that can hold the loads
             other_op_codes = [item for item in self.get_peer_operators(service_code, dev_name, op_load) if item != op_code]
-            self.undeploy(device_copy, mapping)
+            old_resource_requirements = self.operator_profiles[op_code]["requirements"]["system"]
+            old_resource_requirements["cpu"] = cpu_consumption(op_code, dev_name, op_load)
+            # self.undeploy(devices, mapping)
             for other_op_code in other_op_codes:
                 resource_requirements = self.operator_profiles[other_op_code]["requirements"]["system"]
-                resource_requirements["cpu"] = cpu_consumption(other_op_code, dev_name, op_load)
-                if self.is_system_consistent(device_copy[dev_id]["resources"]["system"], resource_requirements):
+                resource_requirements["cpu"] = max(0, cpu_consumption(other_op_code, dev_name, op_load) - old_resource_requirements["cpu"])
+                resource_requirements["memory"] = max(0, resource_requirements["memory"]-old_resource_requirements["memory"])
+
+                if self.is_system_consistent(devices[dev_id]["resources"]["system"], resource_requirements):
                     new_neighbor = copy.deepcopy(current_solution)
-                    for mapping in current_solution:
+                    for mapping in new_neighbor:
                         if mapping[0] == op_id:
                             mapping[1] = other_op_code
                     if new_neighbor not in neighbors:
@@ -181,22 +201,25 @@ class LocalSearch_new:
             service_code = self.microservice_data["ms_types"][ms_id]
             if service_code not in same_microservices.keys():
                 same_microservices[service_code] = {}
-            if mapping[0] not in same_microservices[service_code].keys():
+            if op_id not in same_microservices[service_code].keys():
                 same_microservices[service_code][op_id] = []
             same_microservices[service_code][op_id].append(ms_id)
         """
         for microservices with same type:
             find another operator
         """
+        print("Before each merge resource:")
+        cpu_usage, memory_usage = self.calculate_resource_consumption(current_solution)
+        print(cpu_usage, memory_usage)
         for ms_id, mapping in enumerate(current_solution):
             service_code = self.microservice_data["ms_types"][ms_id]
+            wf_id = self.ms_to_wf[ms_id]
+            rate = self.workflows[wf_id]["rate"]
             # find the rate for this microservice
             oprator_ids = [item for item in same_microservices[service_code].keys() if item != mapping[0]]
             for other_op_id in oprator_ids:
                 other_index = same_microservices[service_code][other_op_id][0]
                 other_mapping = current_solution[other_index]
-                wf_id = self.ms_to_wf[ms_id]
-                rate = self.workflows[wf_id]["rate"]
                 if self.operator_reusable(devices, other_mapping, rate):
                     new_neighbor = copy.deepcopy(current_solution)
                     new_neighbor[ms_id] = other_mapping
@@ -262,14 +285,14 @@ class LocalSearch_new:
                 best_utility = best_neighbor_utility
             best_neighbor, best_neighbor_utility = self.improve_solution(best_solution, 2)
             # TODO: This will lower the search
-            # if best_neighbor_utility > best_utility:
-            #     best_solution = best_neighbor
-            #     best_utility = best_neighbor_utility
-            # best_neighbor, best_neighbor_utility = self.improve_solution(best_solution, 3)
+            if best_neighbor_utility > best_utility:
+                best_solution = best_neighbor
+                best_utility = best_neighbor_utility
+            best_neighbor, best_neighbor_utility = self.improve_solution(best_solution, 3)
             # TODO: this cause resource bugs
-            # if best_neighbor_utility > best_utility:
-            #     best_solution = best_neighbor
-            #     best_utility = best_neighbor_utility
+            if best_neighbor_utility > best_utility:
+                best_solution = best_neighbor
+                best_utility = best_neighbor_utility
             # best_neighbor, best_neighbor_utility = self.improve_solution(best_solution, 4)
             if best_neighbor_utility > best_utility:
                 best_solution = best_neighbor

@@ -48,7 +48,7 @@ jetson_xavier_model = {
         "os": "ubuntu 18.04",
         "resources": {
             "system": {
-                "cpu": 400,
+                "cpu": 800,
                 "gpu": 1,
                 "memory": 32768,
                 "storage": 65600

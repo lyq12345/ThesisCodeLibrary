@@ -167,25 +167,6 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
         return cpu_percentage, memory_percentage
 
     decision_maker = None
-    if solver == "TOPSIS":
-        decision_maker = TOPSIS_decider(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
-    elif solver == "LocalSearch":
-        decision_maker = LocalSearch_deploy(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
-    elif solver == "ORTools":
-        decision_maker = ORTools_Decider(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
-    # elif solver == "Greedy":
-    #     decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
-    elif solver == "LocalSearch_new":
-        decision_maker = LocalSearch_new(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
-    elif solver == "Greedy_accfirst":
-        decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                     transmission_matrix,"accfirst" )
-    elif solver == "Greedy_delayfirst":
-        decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                     transmission_matrix,"delayfirst" )
-    elif solver == "Greedy_multi":
-        decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                     transmission_matrix, "multi" )
 
     sum_elapsed_time = 0.0
     sum_utility = 0.0
@@ -195,6 +176,29 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
 
     for i in range(iterations):
         print(f"Running iteration {i + 1} ...")
+        if solver == "TOPSIS":
+            decision_maker = TOPSIS_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
+                                            transmission_matrix)
+        elif solver == "LocalSearch":
+            decision_maker = LocalSearch_deploy(workflow_list, microservice_data, operator_data, device_list,
+                                                operator_list, transmission_matrix)
+        elif solver == "ORTools":
+            decision_maker = ORTools_Decider(workflow_list, microservice_data, operator_data, device_list,
+                                             operator_list, transmission_matrix)
+        # elif solver == "Greedy":
+        #     decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
+        elif solver == "LocalSearch_new":
+            decision_maker = LocalSearch_new(workflow_list, microservice_data, operator_data, device_list,
+                                             operator_list, transmission_matrix)
+        elif solver == "Greedy_accfirst":
+            decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
+                                            transmission_matrix, "accfirst")
+        elif solver == "Greedy_delayfirst":
+            decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
+                                            transmission_matrix, "delayfirst")
+        elif solver == "Greedy_multi":
+            decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
+                                            transmission_matrix, "multi")
 
         start_time = time.time()
         solution, utility = decision_maker.make_decision()
@@ -273,8 +277,8 @@ def main():
 
     parser = argparse.ArgumentParser(description='test script.')
 
-    parser.add_argument('-d', '--num_devices', default=20, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=30, type=float, help='number of requests')
+    parser.add_argument('-d', '--num_devices', default=100, type=int, help='number of devices')
+    parser.add_argument('-r', '--num_requests', default=10, type=float, help='number of requests')
     parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
 
     args = parser.parse_args()
@@ -322,11 +326,11 @@ def evaluation_experiments():
     operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
     operator_list = read_json(operator_file)
     num_devices = [100]
-    num_requests = [i for i in range(1, 21)]
+    num_requests = [i for i in range(10, 101, 10)]
     # num_devices = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
     # num_requests = [10]
     measure_times = 1
-    solvers = ["LocalSearch", "LocalSearch_new", "TOPSIS", "ORTools"]
+    solvers = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new"]
 
     for i, device_num in enumerate(num_devices):
         # for j in range(i + 1):
@@ -340,14 +344,14 @@ def evaluation_experiments():
             for solver in solvers:
                 print(f"Running i={request_num} k={device_num}, solver={solver}")
                 make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, solver, display=False,
-                                            record=True, iterations=10)
+                                            record=True, iterations=3)
 
     # record finishes, save into csv
     df = pd.DataFrame(data)
-    df.to_csv('results/evaluation_12.csv', index=False)
+    df.to_csv('results/evaluation_13.csv', index=False)
 
 
 if __name__ == '__main__':
-    main()
-    # evaluation_experiments()
+    # main()
+    evaluation_experiments()
 
