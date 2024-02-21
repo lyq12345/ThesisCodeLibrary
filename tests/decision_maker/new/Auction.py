@@ -5,7 +5,7 @@ import random
 from pathlib import Path
 import sys
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from status_tracker.rescons_models import cpu_consumption
+from tests.status_tracker.rescons_models import cpu_consumption
 # 从 JSON 文件中读取数据
 def read_json(filename):
     with open(filename, 'r') as json_file:
@@ -77,9 +77,11 @@ class Adaptation:
         pass
     def emergent_request(self):
         pass
-    def auction_based_recovery(self, devices, unmicroservices, current_solution):
-        pass
+    def auction_based_recovery(self):
+        missed_mids = self.device_fail()
+
 
 
 if __name__ == '__main__':
     adaptation = Adaptation()
+    adaptation.auction_based_recovery()
