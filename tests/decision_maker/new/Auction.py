@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from tests.status_tracker.rescons_models import cpu_consumption
+
 # 从 JSON 文件中读取数据
 def read_json(filename):
     with open(filename, 'r') as json_file:
@@ -15,7 +16,7 @@ def read_json(filename):
 class Adaptation:
     def __init__(self):
         self.workflows = read_json("../mock/workflows.json")
-        # self.microservice_data = microservice_data
+        self.microservice_data = read_json("../mock/microservicedata.json")
         # """
         # microservices_data = {
         #     "microservices_graph": None,
@@ -57,28 +58,47 @@ class Adaptation:
             self.deploy(mapping)
             deployed_op_ids.append(mapping[0])
 
-    def calculate_bid(self, mapping, microservice):
-        pass
+    def calculate_bid(self, mapping, microservice, previous_dev, next_dev):
+        """
+        bidding rule: mappings bid on microservices;
+        bidding rule: the increment for workflow objective for each microservice
+        """
+        op_code = mapping[1]
+        acc = self.operator_profiles[op_code]["accuracy"]
+
+
+
 
     def device_fail(self):
         active_devices = []
+        banned_devices = []
         for mapping in self.solution:
             if mapping[2] not in active_devices:
                 active_devices.append(mapping[2])
         crushed_dev_id = random.choice(active_devices)
-        self.banned_devices.append(crushed_dev_id)
+        banned_devices.append(crushed_dev_id)
         missed_ms_ids = []
         for ms_id, mapping in enumerate(self.solution):
             if mapping[2] == crushed_dev_id:
                 missed_ms_ids.append(ms_id)
-        return missed_ms_ids
+                self.solution[ms_id] = []
+        return missed_ms_ids, banned_devices
 
     def device_disconnection(self):
         pass
     def emergent_request(self):
         pass
     def auction_based_recovery(self):
-        missed_mids = self.device_fail()
+        missed_mids, banned_devices = self.device_fail()
+        while len(missed_mids) > 0:
+            bidders = []
+            for ms_id in missed_mids:
+                service_code = self.microservice_data["ms_types"][ms_id]
+                for mapping in self.solution:
+                    if self.operator_profiles[mapping[1]]["object_code"] == service_code:
+                        bidders.append(mapping)
+
+
 
 
 

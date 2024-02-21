@@ -440,6 +440,7 @@ class LocalSearch_new:
         self.save_list_to_json(best_solution, "mock/solution.json")
         np.save("mock/transmission.npy", self.transmission_matrix)
         # self.save_list_to_json(self.transmission_matrix, "mock/solution.json")
+        self.save_dict_to_json(self.microservice_data, "mock/microservicedata.json")
         self.save_list_to_json(self.devices, "mock/devices.json")
         self.save_list_to_json(self.workflows, "mock/workflows.json")
         self.save_list_to_json(self.operator_data, "mock/operatordata.json")
