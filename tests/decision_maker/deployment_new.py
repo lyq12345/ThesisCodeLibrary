@@ -242,7 +242,7 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
                     # performance_power = calculate_power(op_id, dev_id)
                     # performance_objective = calculate_objective(op_id, source_device_id, dev_id, task_delay)
                     ms_id += 1
-                utility = 0.12*accuracy - 0.88*max(0, (workflow_latency-delay_tol)/workflow_latency)
+                utility = ((0.5*accuracy - 0.5*max(0, (workflow_latency-delay_tol)/workflow_latency))+1)/2
                 utility_sum += utility
                 print(f"Workflow {wf_id}:")
                 print(f"Request: source: {source_device_id} microservices: {microservices}, delay tolerance: {delay_tol}")
@@ -277,9 +277,9 @@ def main():
 
     parser = argparse.ArgumentParser(description='test script.')
 
-    parser.add_argument('-d', '--num_devices', default=100, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=10, type=float, help='number of requests')
-    parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
+    parser.add_argument('-d', '--num_devices', default=50, type=int, help='number of devices')
+    parser.add_argument('-r', '--num_requests', default=30, type=float, help='number of requests')
+    parser.add_argument('-s', '--solver', type=str, default='LocalSearch_new', help='solver name')
 
     args = parser.parse_args()
 
@@ -344,14 +344,14 @@ def evaluation_experiments():
             for solver in solvers:
                 print(f"Running i={request_num} k={device_num}, solver={solver}")
                 make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, solver, display=False,
-                                            record=True, iterations=3)
+                                            record=True, iterations=1)
 
     # record finishes, save into csv
     df = pd.DataFrame(data)
-    df.to_csv('results/evaluation_13.csv', index=False)
+    df.to_csv('results/evaluation_14.csv', index=False)
 
 
 if __name__ == '__main__':
-    # main()
-    evaluation_experiments()
+    main()
+    # evaluation_experiments()
 

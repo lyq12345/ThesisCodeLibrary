@@ -3,6 +3,7 @@ import os
 import json
 from pathlib import Path
 import sys
+import numpy as np
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from status_tracker.rescons_models import cpu_consumption
 from tests.decision_maker.new.Greedy_deploy import Greedy_decider
@@ -390,7 +391,7 @@ class LocalSearch_new:
                     previous_dev_id = solution[ms_id - 1][2]
                     delay += self.transmission_matrix[previous_dev_id][dev_id]
                 ms_id += 1
-            utility = 0.12 * accuracy - 0.88 * max(0, (delay - delay_tol) / delay)
+            utility = ((0.5 * accuracy - 0.5 * max(0, (delay - delay_tol) / delay))+1)/2
             sum_uti += utility
         return sum_uti
 
@@ -422,9 +423,27 @@ class LocalSearch_new:
         for type, amount in resource_requirements.items():
             devices[dev_id]["resources"]["system"][type] += amount
 
+    def save_dict_to_json(self, dictionary, filename):
+        with open(filename, 'w') as json_file:
+            json.dump(dictionary, json_file, indent=4)
+
+    # 保存列表为 JSON 文件
+    def save_list_to_json(self, lst, filename):
+        with open(filename, 'w') as json_file:
+            json.dump(lst, json_file, indent=4)
+
     def make_decision(self):
         print("Running Local Search New decision maker")
         best_solution, best_utility = self.local_search()
+
+        # write the output into files
+        self.save_list_to_json(best_solution, "mock/solution.json")
+        np.save("mock/transmission.npy", self.transmission_matrix)
+        # self.save_list_to_json(self.transmission_matrix, "mock/solution.json")
+        self.save_list_to_json(self.devices, "mock/devices.json")
+        self.save_list_to_json(self.workflows, "mock/workflows.json")
+        self.save_list_to_json(self.operator_data, "mock/operatordata.json")
+
         return best_solution, best_utility
 
 

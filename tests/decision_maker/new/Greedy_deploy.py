@@ -95,7 +95,7 @@ class Greedy_decider:
                     previous_dev_id = solution[ms_id-1][2]
                     delay += self.transmission_matrix[previous_dev_id][dev_id]
                 ms_id += 1
-            utility = 0.12*accuracy - 0.88*max(0, (delay - delay_tol)/delay)
+            utility = ((0.3*accuracy - 0.7*max(0, (delay - delay_tol)/delay))+1)/2
             sum_uti += utility
         return sum_uti
 
