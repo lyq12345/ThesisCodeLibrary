@@ -22,24 +22,24 @@ local_new_time = df[df['algorithm'] == 'LocalSearch_new']['time'].tolist()
 local_new_objective = df[df['algorithm'] == 'LocalSearch_new']['Normalized objective'].tolist()
 
 # objective
-plt.plot(x, greedy_acc_objective, label='greedy_acc', marker='o', linestyle='-')
-plt.plot(x, greedy_delay_objective, label='greedy_delay', marker='o', linestyle='-')
-plt.plot(x, greedy_multi_objective, label='greedy_multi', marker='o', linestyle='-')
-plt.plot(x, local_new_objective, label='LocalSearch_new', marker='o', linestyle='-')
-
-# Add labels and title
-plt.xlabel('Number of requests')
-plt.ylabel('Objective')
-
-# time
-# plt.plot(x, greedy_acc_time, label='greedy_acc', marker='o', linestyle='-')
-# plt.plot(x, greedy_delay_time, label='greedy_delay', marker='o', linestyle='-')
-# plt.plot(x, greedy_multi_time, label='greedy_multi', marker='o', linestyle='-')
-# plt.plot(x, local_new_time, label='LocalSearch_new', marker='o', linestyle='-')
+# plt.plot(x, greedy_acc_objective, label='greedy_acc', marker='o', linestyle='-')
+# plt.plot(x, greedy_delay_objective, label='greedy_delay', marker='o', linestyle='-')
+# plt.plot(x, greedy_multi_objective, label='greedy_multi', marker='o', linestyle='-')
+# plt.plot(x, local_new_objective, label='LocalSearch_new', marker='o', linestyle='-')
 #
 # # Add labels and title
 # plt.xlabel('Number of requests')
-# plt.ylabel('Decision Making Time(s)')
+# plt.ylabel('Objective')
+
+# time
+plt.plot(x, greedy_acc_time, label='greedy_acc', marker='o', linestyle='-')
+plt.plot(x, greedy_delay_time, label='greedy_delay', marker='o', linestyle='-')
+plt.plot(x, greedy_multi_time, label='greedy_multi', marker='o', linestyle='-')
+plt.plot(x, local_new_time, label='LocalSearch_new', marker='o', linestyle='-')
+
+# Add labels and title
+plt.xlabel('Number of requests')
+plt.ylabel('Decision Making Time(s)')
 
 # Add a legend
 plt.legend()

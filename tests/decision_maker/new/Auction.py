@@ -39,6 +39,8 @@ class Adaptation:
             microservices = workflow["workflow"]
             for _ in microservices:
                 self.ms_to_wf.append(wf_id)
+        self.ms_neigbbors = [[-1,-1] for _ in range(len(self.microservice_data["ms_types"]))]
+        self.find_ms_neighbors()
         self.devices = read_json("../mock/devices.json")
         self.operator_data = read_json("../mock/operatordata.json")
         self.operator_profiles = read_json("../../status_tracker/operators.json")
@@ -48,6 +50,15 @@ class Adaptation:
         self.solution = read_json("../mock/solution.json")
         self.consume_operators()
         self.banned_devices = []
+
+    def find_ms_neighbors(self):
+        for ms_id in range(len(self.microservice_data["ms_types"])):
+            for ms_id_2 in range(len(self.microservice_data["ms_types"])):
+                if self.microservice_data["microservices_graph"][ms_id_2][ms_id] == 1:
+                    self.ms_neigbbors[ms_id][0] = ms_id_2
+                if self.microservice_data["microservices_graph"][ms_id][ms_id_2] == 1:
+                    self.ms_neigbbors[ms_id][1] = ms_id_2
+
     def is_system_consistent(self, system_resources, system_requirements):
         for key, value in system_requirements.items():
             if key not in system_resources:
@@ -87,6 +98,18 @@ class Adaptation:
 
         for type, amount in resource_requirements.items():
             self.devices[dev_id]["resources"]["system"][type] -= amount
+
+    def reuse(self, mapping, rate):
+        op_id = mapping[0]
+        op_code = mapping[1]
+        dev_id = mapping[2]
+        dev_name = self.devices[dev_id]["model"]
+        previous_load = mapping[3]
+        new_load = previous_load + rate
+        extra_cpu = cpu_consumption(op_code, dev_name, new_load) - cpu_consumption(op_code, dev_name, previous_load)
+
+        self.devices[dev_id]["resources"]["system"]["cpu"] -= extra_cpu
+        # self.operator_loads[op_id] += rate
 
     def consume_operators(self):
         deployed_op_ids = []
@@ -181,7 +204,12 @@ class Adaptation:
     def emergent_request(self):
         pass
     def auction_based_recovery(self):
+        workflow_accuracies = [1 for _ in range(len(self.workflows))]
+        workflow_delays = [0 for _ in range(len(self.workflows))]
+        # randomly generating faults
         missed_mids, banned_devices = self.device_fail()
+        missed_ms_codes = [self.microservice_data["ms_types"][ms_id] for ms_id in missed_mids]
+        missed_ms_rates = [0 for _ in range(len(missed_mids))]
         microservice_neighbors = {key: [-1, -1] for key in missed_mids }
         # for id in missed_mids:
         #     microservice_neighbors[id]["previous"] = -1
@@ -189,9 +217,12 @@ class Adaptation:
         ms_id_global = 0
         for wf_id, workflow in enumerate(self.workflows):
             microservices = workflow["workflow"]
+            source_dev_id = workflow["source"]
+            rate = workflow["rate"]
             for id in range(len(microservices)):
                 if ms_id_global in missed_mids:
-                    if id==0:
+                    missed_ms_rates[ms_id_global] = rate
+                    if id == 0:
                         microservice_neighbors[ms_id_global][0] = workflow["source"]
                     if id == len(microservices)-1:
                         microservice_neighbors[ms_id_global][1] = -1
@@ -204,19 +235,84 @@ class Adaptation:
                             microservice_neighbors[ms_id_global][1] = -1
                         else:
                             microservice_neighbors[ms_id_global][1] = self.solution[ms_id_global+1][2]
+                else:
+                    mapping = self.solution[ms_id_global]
+                    dev_id = mapping[2]
+                    dev_name = self.devices[mapping[1]]["model"]
+                    op_code = mapping[1]
+                    acc = self.operator_profiles[op_code]["accuracy"]
+                    op_delay = speed_lookup_table[op_code][dev_name]
+                    workflow_accuracies[wf_id] *= acc
+                    workflow_delays[wf_id] += op_delay
+                    if id == 0: # the first microservice
+                        if source_dev_id not in missed_mids:
+                            workflow_delays[wf_id] += self.transmission_matrix[source_dev_id][dev_id]
+                    else:
+                        pre_dev_id = self.solution[ms_id_global-1][2]
+                        if pre_dev_id not in missed_mids:
+                            workflow_delays[wf_id] += self.transmission_matrix[pre_dev_id][dev_id]
                 ms_id_global += 1
 
         while len(missed_mids) > 0:
             bidders_existing = []
             bidders_devices = []
+            # service_code = self.microservice_data["ms_types"][ms_id]
+            for mapping in self.solution:
+                if len(mapping) > 0:
+                    if self.operator_profiles[mapping[1]]["object_code"] in missed_ms_codes:
+                        # if self.operator_reusable(mapping, rate):
+                        bidders_existing.append(mapping)
+            for dev_id, dev in enumerate(self.devices):
+                if dev_id not in banned_devices:
+                    bidders_devices.append(dev_id)
+            highest_price = float("-inf")
+            best_bidder = None
+            bidded_ms_id = -1
+            existing = True
             for ms_id in missed_mids:
-                service_code = self.microservice_data["ms_types"][ms_id]
                 wf_id = self.ms_to_wf[ms_id]
-                rate = self.workflows[wf_id]["rate"]
+                service_code = self.microservice_data["ms_types"][ms_id]
+                # bidder_id = 0
+                for mapping in bidders_existing:
+                    price = self.calculate_bid_mapping(mapping, service_code, missed_ms_rates[ms_id],
+                                                       workflow_accuracies[wf_id], workflow_delays[wf_id], self.workflows[wf_id]["delay"],
+                                                       microservice_neighbors[ms_id][0], microservice_neighbors[ms_id][1])
+                    if price > highest_price:
+                        highest_price = price
+                        best_bidder = mapping
+                        bidded_ms_id = ms_id
+                        existing = True
+                for dev_id in bidders_devices:
+                    price, mapping = self.calculate_bid_device(dev_id, service_code, missed_ms_rates[ms_id],
+                                                       workflow_accuracies[wf_id], workflow_delays[wf_id], self.workflows[wf_id]["delay"],
+                                                       microservice_neighbors[ms_id][0], microservice_neighbors[ms_id][1])
+                    if price > highest_price:
+                        highest_price = price
+                        best_bidder = mapping
+                        bidded_ms_id = ms_id
+                        existing = False
+            # change device states
+            bidded_rate = missed_ms_codes[bidded_ms_id]
+            new_load = best_bidder[3] + bidded_rate
+            if existing:
+                self.reuse(best_bidder, bidded_rate)
+                self.solution[bidded_ms_id] = best_bidder
                 for mapping in self.solution:
-                    if self.operator_profiles[mapping[1]]["object_code"] == service_code:
-                        if self.operator_reusable(mapping, rate):
-                            bidders.append(mapping)
+                    if mapping[0] == best_bidder[0]:
+                        mapping[3] = new_load
+            else:
+                self.deploy(best_bidder)
+                self.solution[bidded_ms_id] = best_bidder
+            missed_ms_codes.remove(bidded_ms_id)
+            bidded_service_code = self.microservice_data["ms_types"][bidded_ms_id]
+            missed_ms_codes.remove(bidded_service_code)
+            # workflow_accuracies
+            # workflow_delays
+            # neighbors
+
+
+
+
 
 
 
