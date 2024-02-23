@@ -5,6 +5,7 @@ import random
 from pathlib import Path
 import sys
 import os
+import time
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from tests.status_tracker.rescons_models import cpu_consumption
 
@@ -100,7 +101,7 @@ class Adaptation:
             self.devices[dev_id]["resources"]["system"][type] -= amount
 
     def reuse(self, mapping, rate):
-        op_id = mapping[0]
+        # op_id = mapping[0]
         op_code = mapping[1]
         dev_id = mapping[2]
         dev_name = self.devices[dev_id]["model"]
@@ -184,6 +185,7 @@ class Adaptation:
                 highest_bid = bid
                 best_op_code = op_code
         return highest_bid, [0, best_op_code, dev_id, rate]
+
     def device_fail(self):
         active_devices = []
         banned_devices = []
@@ -199,6 +201,8 @@ class Adaptation:
                 self.solution[ms_id] = []
         return missed_ms_ids, banned_devices
 
+    def power_shortage(self):
+        pass
     def device_disconnection(self):
         pass
     def emergent_request(self):
@@ -210,32 +214,15 @@ class Adaptation:
         missed_mids, banned_devices = self.device_fail()
         missed_ms_codes = [self.microservice_data["ms_types"][ms_id] for ms_id in missed_mids]
         missed_ms_rates = [0 for _ in range(len(missed_mids))]
-        microservice_neighbors = {key: [-1, -1] for key in missed_mids }
+        microservice_dev_neighbors = {key: [-1, -1] for key in missed_mids}
         # for id in missed_mids:
         #     microservice_neighbors[id]["previous"] = -1
-        # TODO: each ms_id with its previous and next dev_ids
         ms_id_global = 0
         for wf_id, workflow in enumerate(self.workflows):
             microservices = workflow["workflow"]
             source_dev_id = workflow["source"]
-            rate = workflow["rate"]
             for id in range(len(microservices)):
-                if ms_id_global in missed_mids:
-                    missed_ms_rates[ms_id_global] = rate
-                    if id == 0:
-                        microservice_neighbors[ms_id_global][0] = workflow["source"]
-                    if id == len(microservices)-1:
-                        microservice_neighbors[ms_id_global][1] = -1
-                    if id != 0 and id != len(microservices)-1:
-                        if len(self.solution[ms_id_global-1]) == 0:
-                            microservice_neighbors[ms_id_global][0] = -1
-                        else:
-                            microservice_neighbors[ms_id_global][0] = self.solution[ms_id_global-1][2]
-                        if len(self.solution[ms_id_global+1]) == 0:
-                            microservice_neighbors[ms_id_global][1] = -1
-                        else:
-                            microservice_neighbors[ms_id_global][1] = self.solution[ms_id_global+1][2]
-                else:
+                if ms_id_global not in missed_mids:
                     mapping = self.solution[ms_id_global]
                     dev_id = mapping[2]
                     dev_name = self.devices[mapping[1]]["model"]
@@ -244,15 +231,33 @@ class Adaptation:
                     op_delay = speed_lookup_table[op_code][dev_name]
                     workflow_accuracies[wf_id] *= acc
                     workflow_delays[wf_id] += op_delay
-                    if id == 0: # the first microservice
-                        if source_dev_id not in missed_mids:
-                            workflow_delays[wf_id] += self.transmission_matrix[source_dev_id][dev_id]
-                    else:
-                        pre_dev_id = self.solution[ms_id_global-1][2]
-                        if pre_dev_id not in missed_mids:
-                            workflow_delays[wf_id] += self.transmission_matrix[pre_dev_id][dev_id]
+                    pre_ms_id = self.ms_neigbbors[ms_id_global][0]
+                    next_ms_id = self.ms_neigbbors[ms_id_global][1]
+                    if pre_ms_id == -1: # if the first microservice:
+                        if source_dev_id not in banned_devices: # check if source device crashsed
+                            microservice_dev_neighbors[ms_id_global][0] = source_dev_id
+                    else: # not the first microservice
+                        if pre_ms_id not in missed_mids:
+                            pre_dev_id = self.solution[pre_ms_id][2]
+                            microservice_dev_neighbors[ms_id_global][0] = pre_dev_id
+                    if next_ms_id != -1:
+                        if next_ms_id not in missed_mids:
+                            next_dev_id = self.solution[next_ms_id][2]
+                            microservice_dev_neighbors[ms_id_global][1] = next_dev_id
+
+                    if microservice_dev_neighbors[ms_id_global][0] != -1:
+                        pre_dev_id = microservice_dev_neighbors[ms_id_global][0]
+                        workflow_delays[wf_id] += self.transmission_matrix[pre_dev_id][dev_id]
+                    # if id == 0: # the first microservice
+                    #     if source_dev_id not in missed_mids:
+                    #         workflow_delays[wf_id] += self.transmission_matrix[source_dev_id][dev_id]
+                    # else:
+                    #     pre_dev_id = self.solution[ms_id_global-1][2]
+                    #     if pre_dev_id not in missed_mids:
+                    #         workflow_delays[wf_id] += self.transmission_matrix[pre_dev_id][dev_id]
                 ms_id_global += 1
 
+        start_time = time.time()
         while len(missed_mids) > 0:
             bidders_existing = []
             bidders_devices = []
@@ -276,7 +281,7 @@ class Adaptation:
                 for mapping in bidders_existing:
                     price = self.calculate_bid_mapping(mapping, service_code, missed_ms_rates[ms_id],
                                                        workflow_accuracies[wf_id], workflow_delays[wf_id], self.workflows[wf_id]["delay"],
-                                                       microservice_neighbors[ms_id][0], microservice_neighbors[ms_id][1])
+                                                       microservice_dev_neighbors[ms_id][0], microservice_dev_neighbors[ms_id][1])
                     if price > highest_price:
                         highest_price = price
                         best_bidder = mapping
@@ -285,7 +290,7 @@ class Adaptation:
                 for dev_id in bidders_devices:
                     price, mapping = self.calculate_bid_device(dev_id, service_code, missed_ms_rates[ms_id],
                                                        workflow_accuracies[wf_id], workflow_delays[wf_id], self.workflows[wf_id]["delay"],
-                                                       microservice_neighbors[ms_id][0], microservice_neighbors[ms_id][1])
+                                                       microservice_dev_neighbors[ms_id][0], microservice_dev_neighbors[ms_id][1])
                     if price > highest_price:
                         highest_price = price
                         best_bidder = mapping
@@ -306,9 +311,33 @@ class Adaptation:
             missed_ms_codes.remove(bidded_ms_id)
             bidded_service_code = self.microservice_data["ms_types"][bidded_ms_id]
             missed_ms_codes.remove(bidded_service_code)
+
             # workflow_accuracies
+            workflow_accuracies *= self.operator_profiles[best_bidder[1]]["accuracy"]
+            bidded_wf_id = self.ms_to_wf[bidded_ms_id]
             # workflow_delays
+            if microservice_dev_neighbors[bidded_ms_id][0] != -1:
+                pre_dev_id = microservice_dev_neighbors[bidded_ms_id][0]
+                workflow_delays[bidded_wf_id] += self.transmission_matrix[pre_dev_id][best_bidder[2]]
+            if microservice_dev_neighbors[bidded_ms_id][1] != -1:
+                next_dev_id = microservice_dev_neighbors[bidded_ms_id][1]
+                workflow_delays[bidded_wf_id] += self.transmission_matrix[best_bidder[2]][next_dev_id]
             # neighbors
+            pre_ms_id = self.ms_neigbbors[bidded_ms_id]
+            next_ms_id = self.ms_neigbbors[bidded_ms_id]
+            if pre_ms_id == -1:
+                if self.workflows[bidded_wf_id]["source"] not in banned_devices:
+                    microservice_dev_neighbors[bidded_ms_id][0] = self.workflows[bidded_wf_id]["source"]
+            else:
+                if pre_ms_id not in missed_mids:
+                    microservice_dev_neighbors[bidded_ms_id][0] = self.solution[pre_ms_id][2]
+            if next_ms_id != -1:
+                if next_ms_id not in missed_mids:
+                    microservice_dev_neighbors[bidded_ms_id][1] = self.solution[next_ms_id][2]
+
+
+        end_time = time.time()
+        elasped_time = end_time - start_time
 
 
 
