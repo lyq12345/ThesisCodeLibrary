@@ -126,15 +126,15 @@ class Adaptation:
         bidding rule: the increment for workflow objective for each microservice
         """
         op_code = mapping[1]
-        if mapping != service_code:
-            return 0
+        if self.operator_profiles[op_code]["object_code"] != service_code:
+            return float("-inf")
         if not self.operator_reusable(mapping, rate):
-            return 0
+            return float("-inf")
         dev_id = mapping[2]
         dev_model = self.devices[dev_id]["model"]
         acc = self.operator_profiles[op_code]["accuracy"]
         latency = speed_lookup_table[op_code][dev_model]
-        if not (previous_dev_id == -1 and next_dev_id == -1):
+        if previous_dev_id == -1 and next_dev_id == -1:
             latency += 0
         elif previous_dev_id != -1 and next_dev_id == -1:
             latency += self.transmission_matrix[previous_dev_id][dev_id]
@@ -157,12 +157,12 @@ class Adaptation:
                 op_candidates.append(op["id"])
         useful_op_candidates = []
         for op_code in op_candidates:
-            op_resource = self.operator_profiles["requirements"]["system"]
+            op_resource = self.operator_profiles[op_code]["requirements"]["system"]
             op_resource["cpu"] = cpu_consumption(op_code, dev_model, rate)
             if self.is_system_consistent(op_resource, self.devices[dev_id]["resources"]["system"]):
                 useful_op_candidates.append(op_code)
 
-        highest_bid = 0
+        highest_bid = float("-inf")
         best_op_code = -1
         for op_code in useful_op_candidates:
             acc = self.operator_profiles[op_code]["accuracy"]
@@ -208,13 +208,13 @@ class Adaptation:
     def emergent_request(self):
         pass
     def auction_based_recovery(self):
-        workflow_accuracies = [1 for _ in range(len(self.workflows))]
-        workflow_delays = [0 for _ in range(len(self.workflows))]
+        workflow_accuracies = [1.0 for _ in range(len(self.workflows))]
+        workflow_delays = [0.0 for _ in range(len(self.workflows))]
         # randomly generating faults
         missed_mids, banned_devices = self.device_fail()
         missed_ms_codes = [self.microservice_data["ms_types"][ms_id] for ms_id in missed_mids]
-        missed_ms_rates = [0 for _ in range(len(missed_mids))]
-        microservice_dev_neighbors = {key: [-1, -1] for key in missed_mids}
+        ms_rates = [0.0 for _ in range(len(self.microservice_data["ms_types"]))]
+        microservice_dev_neighbors = [[-1, -1] for _ in range(len(self.microservice_data["ms_types"]))]
         # for id in missed_mids:
         #     microservice_neighbors[id]["previous"] = -1
         ms_id_global = 0
@@ -222,10 +222,12 @@ class Adaptation:
             microservices = workflow["workflow"]
             source_dev_id = workflow["source"]
             for id in range(len(microservices)):
+                rate = self.workflows[wf_id]["rate"]
+                ms_rates[ms_id_global] = rate
                 if ms_id_global not in missed_mids:
                     mapping = self.solution[ms_id_global]
                     dev_id = mapping[2]
-                    dev_name = self.devices[mapping[1]]["model"]
+                    dev_name = self.devices[dev_id]["model"]
                     op_code = mapping[1]
                     acc = self.operator_profiles[op_code]["accuracy"]
                     op_delay = speed_lookup_table[op_code][dev_name]
@@ -262,11 +264,15 @@ class Adaptation:
             bidders_existing = []
             bidders_devices = []
             # service_code = self.microservice_data["ms_types"][ms_id]
+            seen_op_ids = []
             for mapping in self.solution:
                 if len(mapping) > 0:
+                    if mapping[0] in seen_op_ids:
+                        continue
                     if self.operator_profiles[mapping[1]]["object_code"] in missed_ms_codes:
                         # if self.operator_reusable(mapping, rate):
                         bidders_existing.append(mapping)
+                        seen_op_ids.append(mapping[0])
             for dev_id, dev in enumerate(self.devices):
                 if dev_id not in banned_devices:
                     bidders_devices.append(dev_id)
@@ -279,7 +285,7 @@ class Adaptation:
                 service_code = self.microservice_data["ms_types"][ms_id]
                 # bidder_id = 0
                 for mapping in bidders_existing:
-                    price = self.calculate_bid_mapping(mapping, service_code, missed_ms_rates[ms_id],
+                    price = self.calculate_bid_mapping(mapping, service_code, ms_rates[ms_id],
                                                        workflow_accuracies[wf_id], workflow_delays[wf_id], self.workflows[wf_id]["delay"],
                                                        microservice_dev_neighbors[ms_id][0], microservice_dev_neighbors[ms_id][1])
                     if price > highest_price:
@@ -288,7 +294,7 @@ class Adaptation:
                         bidded_ms_id = ms_id
                         existing = True
                 for dev_id in bidders_devices:
-                    price, mapping = self.calculate_bid_device(dev_id, service_code, missed_ms_rates[ms_id],
+                    price, mapping = self.calculate_bid_device(dev_id, service_code, ms_rates[ms_id],
                                                        workflow_accuracies[wf_id], workflow_delays[wf_id], self.workflows[wf_id]["delay"],
                                                        microservice_dev_neighbors[ms_id][0], microservice_dev_neighbors[ms_id][1])
                     if price > highest_price:
