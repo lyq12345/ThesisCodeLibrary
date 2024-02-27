@@ -11,7 +11,7 @@ from datetime import datetime
 devices_urls = {
     # "pi": "172.31.158.52",
     "nano": "128.200.218.98",
-    "xavier": "128.200.218.123"
+    "xavier": "128.200.218.112"
 }
 
 interval = 2
@@ -82,7 +82,7 @@ def process_distribution(device, operator, version, port, interval, epoth):
         data['proc_time'].append(avg_delay)
         current_time = datetime.now()
         timestamp_format = current_time.strftime("%y%m%d%H%M%S")
-        save_file = f"results/scale_tests/{device}_{operator}_{version}_{interval}_{timestamp_format}.csv"
+        save_file = f"results/qos_tests/power/{device}_{operator}_{version}_{interval}_{timestamp_format}.csv"
         df = pd.DataFrame(data)
         df.to_csv(save_file, index=False)  # 保存到CSV文件
         print("Completed.")

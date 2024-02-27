@@ -10,8 +10,10 @@ def draw_scatter_graph(x_values, y_values):
     # 添加标题和标签
     # plt.title('test')
     plt.xlabel('invocation frequency(times/s)')
-    plt.ylabel('memory_usage(MiB)')
-    plt.ylim(0, 1000)
+    # plt.ylabel('memory_usage(MiB)')
+    # plt.ylabel('cpu_load(%)')
+    plt.ylabel('power(mW)')
+    # plt.ylim(0, 1000)
 
     # 显示图例
     plt.legend()
@@ -45,14 +47,15 @@ def calculate_standard_deviation(data):
         print("变量在某个水平上下波动")
     else:
         print("变量波动较大")
-data = pd.read_csv('../qos_tests/evaluation_2.csv')
-y = data['qos']
-x1 = data['cpu']
-x2 = data['memory']
+data = pd.read_csv('../../../power_test/power/evaluation.csv')
+# y = data['qos']
+# x1 = data['cpu']
+# x2 = data['memory']
+x3 = data['power']
 x4 = data['interval']
 x4_freq = [1/item for item in x4]
-print(x4_freq)
-draw_scatter_graph(x4_freq, x2)
+# print(x4_freq)
+draw_scatter_graph(x4_freq, x3)
 # calculate_p_value(x1, y)
 # calculate_p_value(x2, y)
 # calculate_standard_deviation(y)
