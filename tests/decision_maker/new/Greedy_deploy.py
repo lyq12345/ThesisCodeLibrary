@@ -47,7 +47,32 @@ class Greedy_decider:
         self.operator_loads = [0.0 for _ in range(len(operator_data))]
 
         self.transmission_matrix = transmission_matrix
+        self.AMax = []
+        self.Amin = []
+        self.calculate_max_min_acc(workflows)
 
+    def calculate_max_min_acc(self, workflows):
+
+        ms_id_global = 0
+        for wf_id, workflow in enumerate(workflows):
+            A_max = 1.0
+            A_min = 1.0
+            microservices = workflow["workflow"]
+            for _ in microservices:
+                min_acc = float("inf")
+                max_acc = float("-inf")
+                service_code = self.microservice_data["ms_types"][ms_id_global]
+                for op in self.operator_profiles:
+                    if op["object_code"] == service_code:
+                        if op["accuracy"] > max_acc:
+                            max_acc = op["accuracy"]
+                        if op["accuracy"] < min_acc:
+                            min_acc = op["accuracy"]
+                A_max *= max_acc
+                A_min *= min_acc
+                ms_id_global += 1
+            self.AMax.append(A_max)
+            self.Amin.append(A_min)
     def is_system_consistent(self, system_resources, system_requirements):
         for key, value in system_requirements.items():
             if key not in system_resources:
@@ -79,9 +104,15 @@ class Greedy_decider:
             delay_tol = workflow["delay"]
             accuracy = 1
             delay = 0
+            unsatisfied = False
+            acc_max = self.AMax[wf_id]
+            acc_min = self.Amin[wf_id]
 
             for i in range(len(workflow["workflow"])):
                 mapping = solution[ms_id]
+                if len(mapping) == 0:
+                    unsatisfied = True
+                    break
                 op_code = mapping[1]
                 dev_id = mapping[2]
                 dev_name = self.devices[dev_id]["model"]
@@ -95,7 +126,17 @@ class Greedy_decider:
                     previous_dev_id = solution[ms_id-1][2]
                     delay += self.transmission_matrix[previous_dev_id][dev_id]
                 ms_id += 1
-            utility = ((0.3*accuracy - 0.7*max(0, (delay - delay_tol)/delay))+1)/2
+            if unsatisfied:
+                continue
+            wa = 0.05
+            wb = 0.95
+            if acc_max == acc_min:
+                A = accuracy
+            else:
+                A = (accuracy - acc_min) / (acc_max - acc_min)
+            B = (delay_tol - delay) / delay_tol
+            utility = wa * A + wb * B
+            # utility = ((0.3*accuracy - 0.7*max(0, (delay - delay_tol)/delay))+1)/2
             sum_uti += utility
         return sum_uti
 
@@ -370,7 +411,10 @@ class Greedy_decider:
                     for dev_id in filtered_dev_ids:
                         mapping_candidates.append([op_id, op_code, dev_id, 0.0])
                 if len(mapping_candidates) == 0:
-                    print("No mapping found!")
+                    # print("No mapping found!")
+                    # this microservice is not satisfied
+                    # solution[ms_id] = best_mapping
+                    continue
                 best_mapping = None
                 if self.policy == "accfirst":
                     best_mapping = self.find_best_mapping_acc(mapping_candidates, previous_mapping)
@@ -399,7 +443,8 @@ class Greedy_decider:
         #     reuse_count[op_id] = reuse_count.get(op_id, 0) + 1
 
         for mapping in solution:
-            mapping[3] = self.operator_loads[mapping[0]]
+            if len(mapping) != 0:
+                mapping[3] = self.operator_loads[mapping[0]]
 
         # self.calculate_resource_consumption(solution)
 

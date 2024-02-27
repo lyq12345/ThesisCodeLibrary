@@ -40,6 +40,9 @@ class LocalSearch_new:
         self.operator_loads = [0 for _ in range(len(operator_data))]
 
         self.transmission_matrix = transmission_matrix
+        self.AMax = []
+        self.Amin = []
+        self.calculate_max_min_acc(workflows)
 
     def get_peer_operators(self, service_code, dev_name, op_load):
         candidate_op_codes = []
@@ -49,6 +52,29 @@ class LocalSearch_new:
                     candidate_op_codes.append(op["id"])
 
         return candidate_op_codes
+
+    def calculate_max_min_acc(self, workflows):
+
+        ms_id_global = 0
+        for wf_id, workflow in enumerate(workflows):
+            A_max = 1.0
+            A_min = 1.0
+            microservices = workflow["workflow"]
+            for _ in microservices:
+                min_acc = float("inf")
+                max_acc = float("-inf")
+                service_code = self.microservice_data["ms_types"][ms_id_global]
+                for op in self.operator_profiles:
+                    if op["object_code"] == service_code:
+                        if op["accuracy"] > max_acc:
+                            max_acc = op["accuracy"]
+                        if op["accuracy"] < min_acc:
+                            min_acc = op["accuracy"]
+                A_max *= max_acc
+                A_min *= min_acc
+                ms_id_global += 1
+            self.AMax.append(A_max)
+            self.Amin.append(A_min)
 
     def operator_reusable(self, devices, mapping, rate):
         op_id = mapping[0]
@@ -373,6 +399,8 @@ class LocalSearch_new:
         for wf_id, workflow in enumerate(self.workflows):
             source_device_id = workflow["source"]
             delay_tol = workflow["delay"]
+            acc_max = self.AMax[wf_id]
+            acc_min = self.Amin[wf_id]
             accuracy = 1
             delay = 0
 
@@ -391,7 +419,14 @@ class LocalSearch_new:
                     previous_dev_id = solution[ms_id - 1][2]
                     delay += self.transmission_matrix[previous_dev_id][dev_id]
                 ms_id += 1
-            utility = ((0.5 * accuracy - 0.5 * max(0, (delay - delay_tol) / delay))+1)/2
+            wa = 0.05
+            wb = 0.95
+            if acc_max == acc_min:
+                A = accuracy
+            else:
+                A = (accuracy-acc_min)/(acc_max-acc_min)
+            B = (delay_tol - delay) / delay_tol
+            utility = wa*A + wb*B
             sum_uti += utility
         return sum_uti
 
