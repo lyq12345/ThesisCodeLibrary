@@ -7,6 +7,7 @@ import numpy as np
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from status_tracker.rescons_models import cpu_consumption
 from tests.decision_maker.new.Greedy_deploy import Greedy_decider
+import random
 
 cur_dir = os.getcwd()
 
@@ -18,8 +19,8 @@ with open(os.path.join(cur_dir, "../status_tracker/speed_lookup_table.json"), 'r
 with open(os.path.join(cur_dir, "../status_tracker/power_lookup_table.json"), 'r') as file:
     power_lookup_table = json.load(file)
 
-class LocalSearch_new:
-    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix):
+class Iterated_LS_decider:
+    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, iteration_time=20, max_no_improvement=10):
         self.workflows = workflows
         self.microservice_data = microservice_data
         """
@@ -44,6 +45,9 @@ class LocalSearch_new:
         self.Amin = []
         self.calculate_max_min_acc(workflows)
 
+        self.iteration_time = iteration_time
+        self.max_no_improvement = max_no_improvement
+
     def get_peer_operators(self, service_code, dev_name, op_load):
         candidate_op_codes = []
         for op in self.operator_profiles:
@@ -52,6 +56,24 @@ class LocalSearch_new:
                     candidate_op_codes.append(op["id"])
 
         return candidate_op_codes
+
+    def create_operator_graph(self, solution):
+        operator_graph = {}
+        ms_id = 0
+        for wf_id, workflow in enumerate(self.workflows):
+            microservices = workflow["workflow"]
+            pre_op_id = -1
+            for id, microservice in enumerate(microservices):
+                op_id = solution[ms_id][0]
+                if op_id not in operator_graph.keys():
+                    operator_graph[op_id] = []
+                if id == 0:
+                    pre_op_id = op_id
+                else:
+                    operator_graph[op_id].append([pre_op_id, wf_id])
+                    pre_op_id = op_id
+                ms_id += 1
+        return operator_graph
 
     def calculate_max_min_acc(self, workflows):
         ms_id_global = 0
@@ -217,7 +239,7 @@ class LocalSearch_new:
                         neighbors.append(new_neighbor)
             changed_op_ids.append(op_id)
 
-    def merge_microservices(self, devices, current_solution, neighbors):
+    def perturbation(self, devices, current_solution):
         # merge the same type of microservices
         # for each microservice, try to reuse other's operator
         same_microservices = {}
@@ -230,32 +252,74 @@ class LocalSearch_new:
             if op_id not in same_microservices[service_code].keys():
                 same_microservices[service_code][op_id] = []
             same_microservices[service_code][op_id].append(ms_id)
-        """
-        for microservices with same type:
-            find another operator
-        """
-        print("Before each merge resource:")
-        cpu_usage, memory_usage = self.calculate_resource_consumption(current_solution)
-        print(cpu_usage, memory_usage)
-        for ms_id, mapping in enumerate(current_solution):
-            service_code = self.microservice_data["ms_types"][ms_id]
-            wf_id = self.ms_to_wf[ms_id]
-            rate = self.workflows[wf_id]["rate"]
-            # find the rate for this microservice
-            oprator_ids = [item for item in same_microservices[service_code].keys() if item != mapping[0]]
-            for other_op_id in oprator_ids:
-                other_index = same_microservices[service_code][other_op_id][0]
-                other_mapping = current_solution[other_index]
-                if self.operator_reusable(devices, other_mapping, rate):
-                    new_neighbor = copy.deepcopy(current_solution)
-                    new_neighbor[ms_id] = other_mapping
-                    for mapping in new_neighbor:
-                        if mapping[0] == other_op_id:
-                            mapping[3] += rate
-                    if new_neighbor not in neighbors:
-                        neighbors.append(new_neighbor)
+        counter = 0
 
-    def improve_solution(self, current_solution, strategy):
+        # "op_id": ["pre1", "pre2", "pre3"]
+        operator_graph = self.create_operator_graph(current_solution)
+
+        changable_op_ids = []
+        for code in same_microservices.keys():
+            op_ids = same_microservices[code].keys()
+            if len(op_ids) > 0:
+                for op_id in op_ids:
+                    changable_op_ids.append(op_id)
+        changable_edges = []
+        for op_id in changable_op_ids:
+            for pre_op_id, wf_id in operator_graph[op_id]:
+                changable_edges.append([pre_op_id, op_id, wf_id])
+
+        if len(changable_edges) == 0:
+            return current_solution
+
+        while counter <= 3:
+            random_edge = random.choice(changable_edges)
+            from_op_id = random_edge[0]
+            to_op_id = random_edge[1]
+            to_op_code = self.operator_data[from_op_id]
+            to_service_code = self.operator_profiles[to_op_code]["object_code"]
+            selected_wf_id = random_edge[2]
+            rate = self.workflows[selected_wf_id]["rate"]
+            other_op_ids = [item for item in same_microservices[to_service_code].keys() if item != to_op_id]
+            if len(other_op_ids) == 0:
+                counter += 1
+                continue
+            new_op_id = random.choice(other_op_ids)
+            new_op_mapping = None
+            to_op_mapping = None
+            for mapping in current_solution:
+                if mapping[0] == new_op_id:
+                    new_op_mapping = mapping
+                if mapping[0] == to_op_id:
+                    to_op_mapping = mapping
+
+            if to_op_mapping[3] - rate > 0:
+                self.change_operator_load(devices, to_op_id, to_op_mapping[2], to_op_mapping[3], to_op_mapping[3] - rate)
+            else:
+                self.undeploy(devices, to_op_mapping)
+
+            if not self.operator_reusable(devices, new_op_mapping, rate):
+                counter += 1
+                if to_op_mapping[3] - rate > 0:
+                    self.change_operator_load(devices, to_op_id, to_op_mapping[2], to_op_mapping[3] - rate, to_op_mapping[3])
+                else:
+                    self.deploy(devices, to_op_mapping)
+                continue
+
+            # 3. change solution ()
+            for id, mapping in enumerate(current_solution):
+                if mapping[0] == new_op_id:
+                    mapping[3] += rate
+                if mapping[0] == to_op_id:
+                    if self.ms_to_wf[id] == selected_wf_id:
+                        temp_new_mapping = new_op_mapping
+                        temp_new_mapping[3] += rate
+                        current_solution[id] = temp_new_mapping
+                    else:
+                        mapping[3] -= rate
+            return current_solution
+
+        return current_solution
+    def improve_solution(self, devices, current_solution, strategy):
         """
         exploration strategies:
         1) swap resources: replace an active device u with a new one v
@@ -267,29 +331,18 @@ class LocalSearch_new:
         best_neighbor = current_solution
         best_neighbor_utility = self.calculate_utility(current_solution)
 
-        device_copy = copy.deepcopy(self.devices)
-        # consume the devices
-        deployed_op_ids = []
-        for mapping in current_solution:
-            if mapping[0] in deployed_op_ids:
-                continue
-            self.deploy(device_copy, mapping)
-            deployed_op_ids.append(mapping[0])
         # print("current solution: ", current_solution)
 
         neighbors = []
         if strategy == 1:
             # new_device_copy = copy.deepcopy(device_copy)
-            self.swap_resource(device_copy, current_solution, neighbors)
+            self.swap_resource(devices, current_solution, neighbors)
         elif strategy == 2:
             # new_device_copy = copy.deepcopy(device_copy)
-            self.move_operator(device_copy, current_solution, neighbors)
+            self.move_operator(devices, current_solution, neighbors)
         elif strategy == 3:
             # new_device_copy = copy.deepcopy(device_copy)
-            self.change_operator(device_copy, current_solution, neighbors)
-        else:
-            # new_device_copy = copy.deepcopy(device_copy)
-            self.merge_microservices(device_copy, current_solution, neighbors)
+            self.change_operator(devices, current_solution, neighbors)
 
         for neighbor in neighbors:
             neighbor_utility = self.calculate_utility(neighbor)
@@ -300,21 +353,21 @@ class LocalSearch_new:
 
         return best_neighbor, best_neighbor_utility
 
-    def local_search(self):
-        best_solution = self.initial_solution()
-        best_utility = self.calculate_utility(best_solution)
+    def local_search(self, devices, current_solution):
+        best_solution = current_solution
+        best_utility = self.calculate_utility(current_solution)
         while True:
             current_best_utility = self.calculate_utility(best_solution)
-            best_neighbor, best_neighbor_utility = self.improve_solution(best_solution, 1)
+            best_neighbor, best_neighbor_utility = self.improve_solution(devices, best_solution, 1)
             if best_neighbor_utility > best_utility:
                 best_solution = best_neighbor
                 best_utility = best_neighbor_utility
-            best_neighbor, best_neighbor_utility = self.improve_solution(best_solution, 2)
+            best_neighbor, best_neighbor_utility = self.improve_solution(devices, best_solution, 2)
             # TODO: This will lower the search
             if best_neighbor_utility > best_utility:
                 best_solution = best_neighbor
                 best_utility = best_neighbor_utility
-            best_neighbor, best_neighbor_utility = self.improve_solution(best_solution, 3)
+            best_neighbor, best_neighbor_utility = self.improve_solution(devices, best_solution, 3)
             # TODO: this cause resource bugs
             if best_neighbor_utility > best_utility:
                 best_solution = best_neighbor
@@ -457,6 +510,13 @@ class LocalSearch_new:
         for type, amount in resource_requirements.items():
             devices[dev_id]["resources"]["system"][type] += amount
 
+    def change_operator_load(self, devices, op_id, dev_id, pre_rate, new_rate):
+        op_code = self.operator_data[op_id]
+        dev_name =devices[dev_id]["model"]
+        resource_requirements = self.operator_profiles[op_code]["requirements"]["system"]
+        cpu_difference = cpu_consumption(op_code, dev_name, new_rate) - cpu_consumption(op_code, dev_name, pre_rate)
+        devices[dev_id]["resources"]["system"]["cpu"] += cpu_difference
+
     def save_dict_to_json(self, dictionary, filename):
         with open(filename, 'w') as json_file:
             json.dump(dictionary, json_file, indent=4)
@@ -466,19 +526,42 @@ class LocalSearch_new:
         with open(filename, 'w') as json_file:
             json.dump(lst, json_file, indent=4)
 
+    def consume_operators(self, devices, solution):
+        deployed_op_ids = []
+        for mapping in solution:
+            if mapping[0] in deployed_op_ids:
+                continue
+            self.deploy(devices, mapping)
+            deployed_op_ids.append(mapping[0])
     def make_decision(self):
-        print("Running Local Search New decision maker")
-        best_solution, best_utility = self.local_search()
+        print("Running Iterated Local Search decision maker")
+        counter = 0
+        X = self.initial_solution()
+        f = self.calculate_utility(X)
+
+        while counter <= self.max_no_improvement:
+            # consume the resources
+            device_copy = copy.deepcopy(self.devices)
+            self.consume_operators(device_copy, X)
+
+            X1, f1 = self.local_search(device_copy, X)
+            if f1 > f:
+                X = X1
+                f = f1
+                counter = 0
+            else:
+                counter += 1
+                X = self.perturbation(device_copy, X)
 
         # write the output into files
-        self.save_list_to_json(best_solution, "mock/solution.json")
-        np.save("mock/transmission.npy", self.transmission_matrix)
-        # self.save_list_to_json(self.transmission_matrix, "mock/solution.json")
-        self.save_dict_to_json(self.microservice_data, "mock/microservicedata.json")
-        self.save_list_to_json(self.devices, "mock/devices.json")
-        self.save_list_to_json(self.workflows, "mock/workflows.json")
-        self.save_list_to_json(self.operator_data, "mock/operatordata.json")
+        # self.save_list_to_json(best_solution, "mock/solution.json")
+        # np.save("mock/transmission.npy", self.transmission_matrix)
+        # # self.save_list_to_json(self.transmission_matrix, "mock/solution.json")
+        # self.save_dict_to_json(self.microservice_data, "mock/microservicedata.json")
+        # self.save_list_to_json(self.devices, "mock/devices.json")
+        # self.save_list_to_json(self.workflows, "mock/workflows.json")
+        # self.save_list_to_json(self.operator_data, "mock/operatordata.json")
 
-        return best_solution, best_utility
+        return X, f
 
 

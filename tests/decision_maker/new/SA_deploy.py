@@ -7,8 +7,9 @@ import numpy as np
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from status_tracker.rescons_models import cpu_consumption
 from tests.decision_maker.new.Greedy_deploy import Greedy_decider
-import math
 import random
+import math
+import matplotlib.pyplot as plt
 
 cur_dir = os.getcwd()
 
@@ -21,7 +22,7 @@ with open(os.path.join(cur_dir, "../status_tracker/power_lookup_table.json"), 'r
     power_lookup_table = json.load(file)
 
 class SA_Decider:
-    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, iter=10, T0=100, Tf=1e-8, alpha=0.99):
+    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, iter=5, T0=1000, Tf=1e-8, alpha=0.99):
         self.workflows = workflows
         self.microservice_data = microservice_data
         """
@@ -82,6 +83,7 @@ class SA_Decider:
         else:
             p = math.exp((f - f_new) / self.T)
             if random.random() < p:
+                print("accept non-improvement!")
                 return 1
             else:
                 return 0
@@ -174,7 +176,7 @@ class SA_Decider:
                 traversed_op_ids.append(op_id)
 
         counter = 0
-        while counter <= 10:
+        while counter <= 3:
             # randomly choose one device and swap with another device
             random_dev_id = random.randint(0, len(ops_on_devices)-1)
             ops = ops_on_devices[random_dev_id]
@@ -194,7 +196,7 @@ class SA_Decider:
         moved_op_ids = []
         # randomly select an operator from mappings
         counter = 0
-        while counter >= 10:
+        while counter <= 3:
             random_ms_id = random.randint(0, len(current_solution)-1)
             mapping = current_solution[random_ms_id]
             op_id = mapping[0]
@@ -216,7 +218,7 @@ class SA_Decider:
     def change_operator(self, devices, current_solution):
         # change deployed operators to other compartible operator
         couter = 0
-        while couter <= 10:
+        while couter <= 3:
             random_ms_id = random.randint(0, len(current_solution) - 1)
             mapping = current_solution[random_ms_id]
             op_id = mapping[0]
@@ -267,7 +269,7 @@ class SA_Decider:
                 same_microservices[service_code][op_id] = []
             same_microservices[service_code][op_id].append(ms_id)
         counter = 0
-        while counter <= 10:
+        while counter <= 3:
             random_ms_id = random.randint(0, len(current_solution) - 1)
             mapping = current_solution[random_ms_id]
             service_code = self.microservice_data["ms_types"][random_ms_id]
@@ -350,6 +352,7 @@ class SA_Decider:
                 if self.Metrospolis(f, f_new):
                     solution = new_solution
                     f_best = f_new
+
 
             self.history['f'].append(f_best)
             self.history['T'].append(self.T)
@@ -459,6 +462,19 @@ class SA_Decider:
             sum_uti += utility
         return sum_uti
 
+    def plot(self, xlim=None, ylim=None):
+        plt.plot(self.history['T'], self.history['f'])
+        plt.title('Simulate Annealing')
+        plt.xlabel('Temperature')
+        plt.ylabel('f value')
+        if xlim:
+            plt.xlim(xlim[0], xlim[-1])
+        if ylim:
+            plt.ylim(ylim[0], ylim[-1])
+        plt.gca().invert_xaxis()
+        plt.show()
+
+
     def calculate_power(self, operator, device_id):
         operator_name = operator["name"]
         device_model = self.devices[device_id]["model"]
@@ -499,6 +515,7 @@ class SA_Decider:
     def make_decision(self):
         print("Running Simulated Annealing decision maker")
         best_solution, best_utility = self.run()
+        # self.plot()
 
         # # write the output into files
         # self.save_list_to_json(best_solution, "mock/solution.json")

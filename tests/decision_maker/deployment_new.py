@@ -17,6 +17,7 @@ from LocalSearch_deploy import LocalSearch_deploy
 from new.ORTools_deploy import ORTools_Decider
 from new.Greedy_deploy import Greedy_decider
 from new.LocalSearch_deploy import LocalSearch_new
+from new.ILS import Iterated_LS_decider
 from new.SA_deploy import SA_Decider
 from pathlib import Path
 import sys
@@ -203,6 +204,9 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
         elif solver == "SA":
             decision_maker = SA_Decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
                                             transmission_matrix)
+        elif solver == "ILS":
+            decision_maker = Iterated_LS_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
+                                            transmission_matrix)
         start_time = time.time()
         solution, utility = decision_maker.make_decision()
         res_objective = utility
@@ -279,17 +283,14 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
 
 
 def main():
-    num_devices = 20
-    num_requests = 6
-    solver = "LocalSearch"
     operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
     operator_list = read_json(operator_file)
 
     parser = argparse.ArgumentParser(description='test script.')
 
-    parser.add_argument('-d', '--num_devices', default=50, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=50, type=float, help='number of requests')
-    parser.add_argument('-s', '--solver', type=str, default='SA', help='solver name')
+    parser.add_argument('-d', '--num_devices', default=30, type=int, help='number of devices')
+    parser.add_argument('-r', '--num_requests', default=30, type=float, help='number of requests')
+    parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
     parser.add_argument('-i', '--iterations', type=str, default=1, help='iteration times')
 
     args = parser.parse_args()
@@ -303,7 +304,7 @@ def main():
         ["Algorithm", "Objective", "Time"]
     ]
 
-    all_algorithms = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new", "SA"]
+    all_algorithms = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new", "ILS"]
     sum_times = []
     sum_objectives = []
     if solver == "All":
@@ -371,7 +372,7 @@ def evaluation_experiments():
     iterations = 3
     # num_devices = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
     # num_requests = [10]
-    solvers = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new"]
+    solvers = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new", "ILS"]
 
     for i, device_num in enumerate(num_devices):
         # for j in range(i + 1):
@@ -403,10 +404,10 @@ def evaluation_experiments():
                 data['algorithm'].append(algorithm)
     # record finishes, save into csv
     df = pd.DataFrame(data)
-    df.to_csv('results/evaluation_16.csv', index=False)
+    df.to_csv('results/evaluation_18.csv', index=False)
 
 
 if __name__ == '__main__':
-    main()
-    # evaluation_experiments()
+    # main()
+    evaluation_experiments()
 
