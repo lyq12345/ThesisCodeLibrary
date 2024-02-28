@@ -54,7 +54,6 @@ class LocalSearch_new:
         return candidate_op_codes
 
     def calculate_max_min_acc(self, workflows):
-
         ms_id_global = 0
         for wf_id, workflow in enumerate(workflows):
             A_max = 1.0
@@ -187,7 +186,7 @@ class LocalSearch_new:
             moved_op_ids.append(op_id)
 
     def change_operator(self, devices, current_solution, neighbors):
-        # change deployed operators to other compartible operator
+        # change deployed operators to other compatible operator
         changed_op_ids = []
         for ms_id, mapping in enumerate(current_solution):
             # device_copy = copy.deepcopy(devices)

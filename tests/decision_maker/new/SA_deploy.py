@@ -42,6 +42,9 @@ class SA_Decider:
         self.operator_loads = [0 for _ in range(len(operator_data))]
 
         self.transmission_matrix = transmission_matrix
+        self.AMax = []
+        self.Amin = []
+        self.calculate_max_min_acc(workflows)
 
         self.iter = iter
         self.alpha = alpha
@@ -49,12 +52,36 @@ class SA_Decider:
         self.Tf = Tf
         self.T = T0
 
+        self.history = {"f": [], "T": []}
+
+    def calculate_max_min_acc(self, workflows):
+        ms_id_global = 0
+        for wf_id, workflow in enumerate(workflows):
+            A_max = 1.0
+            A_min = 1.0
+            microservices = workflow["workflow"]
+            for _ in microservices:
+                min_acc = float("inf")
+                max_acc = float("-inf")
+                service_code = self.microservice_data["ms_types"][ms_id_global]
+                for op in self.operator_profiles:
+                    if op["object_code"] == service_code:
+                        if op["accuracy"] > max_acc:
+                            max_acc = op["accuracy"]
+                        if op["accuracy"] < min_acc:
+                            min_acc = op["accuracy"]
+                A_max *= max_acc
+                A_min *= min_acc
+                ms_id_global += 1
+            self.AMax.append(A_max)
+            self.Amin.append(A_min)
+
     def Metrospolis(self, f, f_new):
         if f_new <= f:
             return 1
         else:
             p = math.exp((f - f_new) / self.T)
-            if random() < p:
+            if random.random() < p:
                 return 1
             else:
                 return 0
@@ -146,64 +173,85 @@ class SA_Decider:
                 ops_on_devices[dev_id].append([op_id, op_code, op_load])
                 traversed_op_ids.append(op_id)
 
-        # randomly choose one device and swap with another device
-        random_dev_id = random.randint(0, len(ops_on_devices)-1)
-        ops = ops_on_devices[random_dev_id]
-        filtered_dev_ids = [item for item in self.filter_devices_multiop(devices, ops) if item != random_dev_id]
-        other_random_dev_id = random.choice(filtered_dev_ids)
-        new_neighbor = copy.deepcopy(current_solution)
-        for ms_id, mapping in enumerate(new_neighbor):
-            if mapping[2] == random_dev_id:
-                new_neighbor[ms_id][2] = other_random_dev_id
-        return new_neighbor
+        counter = 0
+        while counter <= 10:
+            # randomly choose one device and swap with another device
+            random_dev_id = random.randint(0, len(ops_on_devices)-1)
+            ops = ops_on_devices[random_dev_id]
+            filtered_dev_ids = [item for item in self.filter_devices_multiop(devices, ops) if item != random_dev_id]
+            if len(filtered_dev_ids) == 0:
+                counter += 1
+                continue
+            other_random_dev_id = random.choice(filtered_dev_ids)
+            new_neighbor = copy.deepcopy(current_solution)
+            for ms_id, mapping in enumerate(new_neighbor):
+                if mapping[2] == random_dev_id:
+                    new_neighbor[ms_id][2] = other_random_dev_id
+            return new_neighbor
+        return current_solution
     def move_operator(self, devices, current_solution):
         # move an operator from u to a new v
         moved_op_ids = []
         # randomly select an operator from mappings
-        random_ms_id = random.randint(0, len(current_solution)-1)
-        mapping = current_solution[random_ms_id]
-        op_id = mapping[0]
-        op_code = mapping[1]
-        dev_id = mapping[2]
-        op_load = mapping[3]
-        filtered_dev_ids = [item for item in self.filter_devices(devices, (op_id, op_code, op_load)) if item != dev_id]
-        random_dev_id = random.choice(filtered_dev_ids)
-        new_neighbor = copy.deepcopy(current_solution)
-        for mapping in new_neighbor:
-            if mapping[0] == op_id:
-                mapping[2] = random_dev_id
-        return new_neighbor
+        counter = 0
+        while counter >= 10:
+            random_ms_id = random.randint(0, len(current_solution)-1)
+            mapping = current_solution[random_ms_id]
+            op_id = mapping[0]
+            op_code = mapping[1]
+            dev_id = mapping[2]
+            op_load = mapping[3]
+            filtered_dev_ids = [item for item in self.filter_devices(devices, (op_id, op_code, op_load)) if item != dev_id]
+            if len(filtered_dev_ids) == 0:
+                counter += 1
+                continue
+            random_dev_id = random.choice(filtered_dev_ids)
+            new_neighbor = copy.deepcopy(current_solution)
+            for mapping in new_neighbor:
+                if mapping[0] == op_id:
+                    mapping[2] = random_dev_id
+            return new_neighbor
+        return current_solution
 
     def change_operator(self, devices, current_solution):
         # change deployed operators to other compartible operator
-        random_ms_id = random.randint(0, len(current_solution) - 1)
-        mapping = current_solution[random_ms_id]
-        op_id = mapping[0]
-        op_code = mapping[1]
-        dev_id = mapping[2]
-        dev_name = devices[dev_id]["model"]
-        op_load = mapping[3]
-        service_code = self.microservice_data["ms_types"][random_ms_id]
-        # get peer operators that can hold the loads
-        other_op_codes = [item for item in self.get_peer_operators(service_code, dev_name, op_load) if item != op_code]
-        old_resource_requirements = self.operator_profiles[op_code]["requirements"]["system"]
-        old_resource_requirements["cpu"] = cpu_consumption(op_code, dev_name, op_load)
-        # self.undeploy(devices, mapping)
-        qualified_opcodes = []
-        for other_op_code in other_op_codes:
-            resource_requirements = self.operator_profiles[other_op_code]["requirements"]["system"]
-            resource_requirements["cpu"] = max(0, cpu_consumption(other_op_code, dev_name, op_load) -
-                                               old_resource_requirements["cpu"])
-            resource_requirements["memory"] = max(0,
-                                                  resource_requirements["memory"] - old_resource_requirements["memory"])
-            if self.is_system_consistent(devices[dev_id]["resources"]["system"], resource_requirements):
-                qualified_opcodes.append(other_op_code)
-        random_op_code = random.choice(qualified_opcodes)
-        new_neighbor = copy.deepcopy(current_solution)
-        for mapping in new_neighbor:
-            if mapping[0] == op_id:
-                mapping[1] = random_op_code
-        return new_neighbor
+        couter = 0
+        while couter <= 10:
+            random_ms_id = random.randint(0, len(current_solution) - 1)
+            mapping = current_solution[random_ms_id]
+            op_id = mapping[0]
+            op_code = mapping[1]
+            dev_id = mapping[2]
+            dev_name = devices[dev_id]["model"]
+            op_load = mapping[3]
+            service_code = self.microservice_data["ms_types"][random_ms_id]
+            # get peer operators that can hold the loads
+            other_op_codes = [item for item in self.get_peer_operators(service_code, dev_name, op_load) if item != op_code]
+            if len(other_op_codes) == 0:
+                couter += 1
+                continue
+            old_resource_requirements = self.operator_profiles[op_code]["requirements"]["system"]
+            old_resource_requirements["cpu"] = cpu_consumption(op_code, dev_name, op_load)
+            # self.undeploy(devices, mapping)
+            qualified_opcodes = []
+            for other_op_code in other_op_codes:
+                resource_requirements = self.operator_profiles[other_op_code]["requirements"]["system"]
+                resource_requirements["cpu"] = max(0, cpu_consumption(other_op_code, dev_name, op_load) -
+                                                   old_resource_requirements["cpu"])
+                resource_requirements["memory"] = max(0,
+                                                      resource_requirements["memory"] - old_resource_requirements["memory"])
+                if self.is_system_consistent(devices[dev_id]["resources"]["system"], resource_requirements):
+                    qualified_opcodes.append(other_op_code)
+            if len(qualified_opcodes) == 0:
+                couter += 1
+                continue
+            random_op_code = random.choice(qualified_opcodes)
+            new_neighbor = copy.deepcopy(current_solution)
+            for mapping in new_neighbor:
+                if mapping[0] == op_id:
+                    mapping[1] = random_op_code
+            return new_neighbor
+        return current_solution
 
     def merge_microservices(self, devices, current_solution):
         # merge the same type of microservices
@@ -218,126 +266,98 @@ class SA_Decider:
             if op_id not in same_microservices[service_code].keys():
                 same_microservices[service_code][op_id] = []
             same_microservices[service_code][op_id].append(ms_id)
-
-        # only choose a ms with multiple occurance times to merge
-        multi_codes = [code for code in same_microservices.keys() if len(same_microservices[code].keys()) > 0]
-        """
-        for microservices with same type:
-            find another operator
-        """
-        print("Before each merge resource:")
-        cpu_usage, memory_usage = self.calculate_resource_consumption(current_solution)
-        print(cpu_usage, memory_usage)
-        for ms_id, mapping in enumerate(current_solution):
-            service_code = self.microservice_data["ms_types"][ms_id]
-            wf_id = self.ms_to_wf[ms_id]
+        counter = 0
+        while counter <= 10:
+            random_ms_id = random.randint(0, len(current_solution) - 1)
+            mapping = current_solution[random_ms_id]
+            service_code = self.microservice_data["ms_types"][random_ms_id]
+            wf_id = self.ms_to_wf[random_ms_id]
             rate = self.workflows[wf_id]["rate"]
-            # find the rate for this microservice
-            oprator_ids = [item for item in same_microservices[service_code].keys() if item != mapping[0]]
-            for other_op_id in oprator_ids:
+            operator_ids = [item for item in same_microservices[service_code].keys() if item != mapping[0]]
+            if len(operator_ids) == 0:
+                counter += 1
+                continue
+            reusable_op_mappings = []
+            for other_op_id in operator_ids:
                 other_index = same_microservices[service_code][other_op_id][0]
                 other_mapping = current_solution[other_index]
                 if self.operator_reusable(devices, other_mapping, rate):
-                    new_neighbor = copy.deepcopy(current_solution)
-                    new_neighbor[ms_id] = other_mapping
-                    for mapping in new_neighbor:
-                        if mapping[0] == other_op_id:
-                            mapping[3] += rate
-                    if new_neighbor not in neighbors:
-                        neighbors.append(new_neighbor)
+                    reusable_op_mappings.append(other_mapping)
+            if len(reusable_op_mappings) == 0:
+                counter += 1
+                continue
+            random_mapping = random.choice(reusable_op_mappings)
+            selected_op_id = random_mapping[0]
+            new_neighbor = copy.deepcopy(current_solution)
+            new_neighbor[random_ms_id] = random_mapping
+            for mapping in new_neighbor:
+                if mapping[0] == selected_op_id:
+                    mapping[3] += rate
+            return new_neighbor
+        return current_solution
 
-    def improve_solution(self, current_solution, strategy):
-        """
-        exploration strategies:
-        1) swap resources: replace an active device u with a new one v
-        2) relocate operator: relocate a single operator i from its location u to a new device v
-        3) change operator: change operator i on a device u to operator j that does the same thing
-        4) microservice reuse: merge microservices with same type of requests
-        """
-        # moving one operator to another device; change to another operator
-        best_neighbor = current_solution
-        best_neighbor_utility = self.calculate_utility(current_solution)
-
-        device_copy = copy.deepcopy(self.devices)
-        # consume the devices
+    def consume_operators(self, devices, solution):
         deployed_op_ids = []
-        for mapping in current_solution:
+        for mapping in solution:
             if mapping[0] in deployed_op_ids:
                 continue
-            self.deploy(device_copy, mapping)
+            self.deploy(devices, mapping)
             deployed_op_ids.append(mapping[0])
-        # print("current solution: ", current_solution)
+        return devices
 
-        neighbors = []
-        if strategy == 1:
-            new_device_copy = copy.deepcopy(device_copy)
-            self.swap_resource(new_device_copy, current_solution, neighbors)
-        elif strategy == 2:
-            new_device_copy = copy.deepcopy(device_copy)
-            self.move_operator(new_device_copy, current_solution, neighbors)
-        elif strategy == 3:
-            new_device_copy = copy.deepcopy(device_copy)
-            self.change_operator(new_device_copy, current_solution, neighbors)
+    def generate_new(self, current_device, current_solution):
+        functions = [self.swap_resource, self.move_operator, self.change_operator, self.merge_microservices]
+        # T higher, more purturbations
+        T_diff = (self.T0 - self.Tf) / 4
+        T1 = self.T0 + T_diff
+        T2 = T1 + T_diff
+        T3 = T2 + T_diff
+        best_neighbor = current_solution
+        best_utility = self.calculate_utility(current_solution)
+
+        new_solution = current_solution
+        if self.T >= self.T0 and self.T < T1:
+            purturb_num = 4
+        elif self.T >= T1 and self.T < T2:
+            purturb_num = 3
+        elif  self.T >= T2 and self.T < T3:
+            purturb_num = 2
         else:
-            new_device_copy = copy.deepcopy(device_copy)
-            self.merge_microservices(new_device_copy, current_solution, neighbors)
-
-        for neighbor in neighbors:
-            neighbor_utility = self.calculate_utility(neighbor)
-            if neighbor_utility > best_neighbor_utility:
-                # self.calculate_resource_consumption(neighbor)
-                best_neighbor_utility = neighbor_utility
-                best_neighbor = neighbor
-
-        return best_neighbor, best_neighbor_utility
+            purturb_num = 1
+        selected_functions = random.sample(functions, purturb_num)
+        for func in selected_functions:
+            new_solution = func(current_device, current_solution)
+            new_utility = self.calculate_utility(new_solution)
+            if new_utility > best_utility:
+                best_utility = new_utility
+                best_neighbor = new_solution
+        return best_neighbor
 
     def run(self):
         count = 0
         # annealing
+        # current_devices = copy.deepcopy(self.devices)
         solution = self.initial_solution()
+        # self.consume_operators(current_devices, solution)
         f_best = float("-inf")
         while self.T > self.Tf:
-            # iteration
+            # inner iteration
             for i in range(self.iter):
                 f = self.calculate_utility(solution)
-                new_solution = self.generate_new(solution)
+                current_devices = self.consume_operators(copy.deepcopy(self.devices), solution)
+                new_solution = self.generate_new(current_devices, solution)
                 f_new = self.calculate_utility(new_solution)
                 if self.Metrospolis(f, f_new):
                     solution = new_solution
                     f_best = f_new
-                    self.history['f'].append(f_new)
 
+            self.history['f'].append(f_best)
             self.history['T'].append(self.T)
             #cooling
             self.T = self.T * self.alpha
             count += 1
 
-
-        while True:
-            current_best_utility = self.calculate_utility(best_solution)
-            best_neighbor, best_neighbor_utility = self.improve_solution(best_solution, 1)
-            if best_neighbor_utility > best_utility:
-                best_solution = best_neighbor
-                best_utility = best_neighbor_utility
-            best_neighbor, best_neighbor_utility = self.improve_solution(best_solution, 2)
-            # TODO: This will lower the search
-            if best_neighbor_utility > best_utility:
-                best_solution = best_neighbor
-                best_utility = best_neighbor_utility
-            best_neighbor, best_neighbor_utility = self.improve_solution(best_solution, 3)
-            # TODO: this cause resource bugs
-            if best_neighbor_utility > best_utility:
-                best_solution = best_neighbor
-                best_utility = best_neighbor_utility
-            # best_neighbor, best_neighbor_utility = self.improve_solution(best_solution, 4)
-            if best_neighbor_utility > best_utility:
-                best_solution = best_neighbor
-                best_utility = best_neighbor_utility
-
-            if best_utility <= current_best_utility: # if no improvements made:
-                break
-
-        return best_solution, best_utility
+        return solution, f_best
 
     def is_system_consistent(self, system_resources, system_requirements):
         for key, value in system_requirements.items():
@@ -408,6 +428,8 @@ class SA_Decider:
         for wf_id, workflow in enumerate(self.workflows):
             source_device_id = workflow["source"]
             delay_tol = workflow["delay"]
+            acc_max = self.AMax[wf_id]
+            acc_min = self.Amin[wf_id]
             accuracy = 1
             delay = 0
 
@@ -426,7 +448,14 @@ class SA_Decider:
                     previous_dev_id = solution[ms_id - 1][2]
                     delay += self.transmission_matrix[previous_dev_id][dev_id]
                 ms_id += 1
-            utility = ((0.5 * accuracy - 0.5 * max(0, (delay - delay_tol) / delay))+1)/2
+            wa = 0.05
+            wb = 0.95
+            if acc_max == acc_min:
+                A = accuracy
+            else:
+                A = (accuracy - acc_min) / (acc_max - acc_min)
+            B = (delay_tol - delay) / delay_tol
+            utility = wa * A + wb * B
             sum_uti += utility
         return sum_uti
 
@@ -468,17 +497,17 @@ class SA_Decider:
             json.dump(lst, json_file, indent=4)
 
     def make_decision(self):
-        print("Running Local Search New decision maker")
-        best_solution, best_utility = self.local_search()
+        print("Running Simulated Annealing decision maker")
+        best_solution, best_utility = self.run()
 
-        # write the output into files
-        self.save_list_to_json(best_solution, "mock/solution.json")
-        np.save("mock/transmission.npy", self.transmission_matrix)
-        # self.save_list_to_json(self.transmission_matrix, "mock/solution.json")
-        self.save_dict_to_json(self.microservice_data, "mock/microservicedata.json")
-        self.save_list_to_json(self.devices, "mock/devices.json")
-        self.save_list_to_json(self.workflows, "mock/workflows.json")
-        self.save_list_to_json(self.operator_data, "mock/operatordata.json")
+        # # write the output into files
+        # self.save_list_to_json(best_solution, "mock/solution.json")
+        # np.save("mock/transmission.npy", self.transmission_matrix)
+        # # self.save_list_to_json(self.transmission_matrix, "mock/solution.json")
+        # self.save_dict_to_json(self.microservice_data, "mock/microservicedata.json")
+        # self.save_list_to_json(self.devices, "mock/devices.json")
+        # self.save_list_to_json(self.workflows, "mock/workflows.json")
+        # self.save_list_to_json(self.operator_data, "mock/operatordata.json")
 
         return best_solution, best_utility
 

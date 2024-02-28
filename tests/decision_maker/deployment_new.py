@@ -17,6 +17,7 @@ from LocalSearch_deploy import LocalSearch_deploy
 from new.ORTools_deploy import ORTools_Decider
 from new.Greedy_deploy import Greedy_decider
 from new.LocalSearch_deploy import LocalSearch_new
+from new.SA_deploy import SA_Decider
 from pathlib import Path
 import sys
 sys.path.append(str(Path(__file__).resolve().parents[1]))
@@ -199,7 +200,9 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
         elif solver == "Greedy_multi":
             decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
                                             transmission_matrix, "multi")
-
+        elif solver == "SA":
+            decision_maker = SA_Decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
+                                            transmission_matrix)
         start_time = time.time()
         solution, utility = decision_maker.make_decision()
         res_objective = utility
@@ -284,10 +287,10 @@ def main():
 
     parser = argparse.ArgumentParser(description='test script.')
 
-    parser.add_argument('-d', '--num_devices', default=30, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=30, type=float, help='number of requests')
-    parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
-    parser.add_argument('-i', '--iterations', type=str, default=3, help='iteration times')
+    parser.add_argument('-d', '--num_devices', default=50, type=int, help='number of devices')
+    parser.add_argument('-r', '--num_requests', default=50, type=float, help='number of requests')
+    parser.add_argument('-s', '--solver', type=str, default='SA', help='solver name')
+    parser.add_argument('-i', '--iterations', type=str, default=1, help='iteration times')
 
     args = parser.parse_args()
 
@@ -300,7 +303,7 @@ def main():
         ["Algorithm", "Objective", "Time"]
     ]
 
-    all_algorithms = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new"]
+    all_algorithms = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new", "SA"]
     sum_times = []
     sum_objectives = []
     if solver == "All":
@@ -404,6 +407,6 @@ def evaluation_experiments():
 
 
 if __name__ == '__main__':
-    # main()
-    evaluation_experiments()
+    main()
+    # evaluation_experiments()
 
