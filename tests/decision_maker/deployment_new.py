@@ -367,8 +367,8 @@ def main():
 def evaluation_experiments():
     operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
     operator_list = read_json(operator_file)
-    num_devices = [100]
-    num_requests = [i for i in range(10, 101, 10)]
+    num_devices = [30]
+    num_requests = [i for i in range(10, 31, 10)]
     iterations = 3
     # num_devices = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
     # num_requests = [10]
