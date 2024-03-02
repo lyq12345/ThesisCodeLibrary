@@ -7,6 +7,7 @@ import argparse
 import pandas as pd
 import random
 from pathlib import Path
+from enum import Enum
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 # from greedy_deploy import Greedy_Decider
@@ -62,6 +63,47 @@ def print_table(data):
         for item in row:
             print(f" {item} |", end="")
         print()
+
+class MyEnum(Enum):
+    WIFI = 1
+    FOURG = 2
+    LORA = 3
+    BLUETOOTH = 4
+
+def generate_network_model(n):
+    probabilities = [0.8, 0.1, 0.05, 0.01]
+    bw_dict = {
+        "BLUETOOTH": [2],
+        "WIFI": [11],
+        "FOURG": [20],
+        "LORA": [0.01]
+    }
+    delay_dict = {
+        "BLUETOOTH": [1, 100],
+        "WIFI": [1, 100],
+        "FOURG": [10, 100],
+        "LORA": [100, 1000]
+    }
+    # delay_dict = [[1, 100], [10, 100], [1, 100], [100, 1000]]
+    # bw_dict = [[11], [20], [2], [0.01]]
+
+    delay_matrix = np.full((n, n), 0.0)
+    bandwidth_matrix = np.full((n, n), np.inf)
+    linktype_matrix = np.full((n, n), 0)
+    for i in range(n):
+        for j in range(i+1, n):
+            if i != j:
+                link_type = random.choices(list(MyEnum), weights=probabilities)[0]
+                linktype_matrix[i][j] = link_type.value
+                linktype_matrix[j][i] = link_type.value
+                delay = random.uniform(delay_dict[link_type.name][0], delay_dict[link_type.name][1])
+                bandwidth = bw_dict[link_type.name][0]
+                delay_matrix[i][j] = delay
+                delay_matrix[j][i] = delay
+                bandwidth_matrix[i][j] = bandwidth
+                bandwidth_matrix[j][i] = bandwidth
+
+    return delay_matrix, bandwidth_matrix, linktype_matrix
 
 def generate_transmission_rate_matrix(n, min_rate=1, max_rate=5):
     transmission_matrix = np.full((n, n), np.inf)
@@ -320,6 +362,8 @@ def main():
         microservice_data = create_microservice_model(workflow_list)
         operator_data = create_operator_model(operator_list, microservice_data["ms_types"])
         transmission_matrix = generate_transmission_rate_matrix(len(device_list))
+        delay_matrix, bandwidth_matrix, linktype_matrix = generate_network_model(len(device_list))
+
 
         if solver == "All":
             for i in range(len(all_algorithms)):
@@ -408,6 +452,6 @@ def evaluation_experiments():
 
 
 if __name__ == '__main__':
-    # main()
-    evaluation_experiments()
+    main()
+    # evaluation_experiments()
 

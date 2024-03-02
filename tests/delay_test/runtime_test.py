@@ -23,7 +23,13 @@ def resize_img(img, new_width):
     return resized_image
 
 def process_distribution(device, operator, version, port, interval, epoth):
-    img_file = "test_human_2.jpeg" if operator == "human" else "test_fire.jpg"
+    if operator == "human":
+        img_file = "test_human_2.jpeg"
+    elif operator == "pose":
+        img_file = "test_pose.jpg"
+    else:
+        img_file = "test_fire.jpg"
+    # img_file = "test_human_2.jpeg" if operator == "human" else "test_fire.jpg"
     target_url = f"http://{devices_urls[device]}:{port}/process_video"
     data = {'proc_time': []}
 
