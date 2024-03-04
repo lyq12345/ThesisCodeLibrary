@@ -45,7 +45,7 @@ def calculate_standard_deviation(data):
         print("变量在某个水平上下波动")
     else:
         print("变量波动较大")
-data = pd.read_csv('../qos_tests/evaluation_2.csv')
+data = pd.read_csv('../qos_tests/evaluation.csv')
 y = data['qos']
 x1 = data['cpu']
 x2 = data['memory']

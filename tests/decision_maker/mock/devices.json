@@ -2,16 +2,16 @@
     {
         "id": 0,
         "hostname": "node0",
-        "model": "jetson-xavier",
+        "model": "raspberrypi-4b",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "ubuntu 18.04",
+        "os": "Raspbian GNU/Linux 10 (buster)",
         "resources": {
             "system": {
-                "cpu": 800,
-                "gpu": 1,
-                "memory": 32768,
-                "storage": 65600
+                "cpu": 400,
+                "gpu": 0,
+                "memory": 4096,
+                "storage": 131072
             },
             "hardware": [
                 {
@@ -48,22 +48,22 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
         "id": 2,
         "hostname": "node2",
-        "model": "raspberrypi-4b",
+        "model": "jetson-nano",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "Raspbian GNU/Linux 10 (buster)",
+        "os": "ubuntu 18.04",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 0,
+                "gpu": 1,
                 "memory": 4096,
-                "storage": 131072
+                "storage": 65600
             },
             "hardware": [
                 {
@@ -126,7 +126,7 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
@@ -158,16 +158,16 @@
     {
         "id": 6,
         "hostname": "node6",
-        "model": "jetson-nano",
+        "model": "raspberrypi-4b",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "ubuntu 18.04",
+        "os": "Raspbian GNU/Linux 10 (buster)",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 1,
+                "gpu": 0,
                 "memory": 4096,
-                "storage": 65600
+                "storage": 131072
             },
             "hardware": [
                 {
@@ -178,7 +178,7 @@
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
@@ -210,16 +210,16 @@
     {
         "id": 8,
         "hostname": "node8",
-        "model": "raspberrypi-4b",
+        "model": "jetson-nano",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "Raspbian GNU/Linux 10 (buster)",
+        "os": "ubuntu 18.04",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 0,
+                "gpu": 1,
                 "memory": 4096,
-                "storage": 131072
+                "storage": 65600
             },
             "hardware": [
                 {
@@ -236,16 +236,16 @@
     {
         "id": 9,
         "hostname": "node9",
-        "model": "jetson-nano",
+        "model": "raspberrypi-4b",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "ubuntu 18.04",
+        "os": "Raspbian GNU/Linux 10 (buster)",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 1,
+                "gpu": 0,
                 "memory": 4096,
-                "storage": 65600
+                "storage": 131072
             },
             "hardware": [
                 {
@@ -256,7 +256,7 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
@@ -282,7 +282,7 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
@@ -314,16 +314,16 @@
     {
         "id": 12,
         "hostname": "node12",
-        "model": "raspberrypi-4b",
+        "model": "jetson-xavier",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "Raspbian GNU/Linux 10 (buster)",
+        "os": "ubuntu 18.04",
         "resources": {
             "system": {
-                "cpu": 400,
-                "gpu": 0,
-                "memory": 4096,
-                "storage": 131072
+                "cpu": 800,
+                "gpu": 1,
+                "memory": 32768,
+                "storage": 65600
             },
             "hardware": [
                 {
@@ -360,21 +360,21 @@
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
         "id": 14,
         "hostname": "node14",
-        "model": "jetson-nano",
+        "model": "jetson-xavier",
         "ip": "172.22.152.175",
         "arch": "arm64",
         "os": "ubuntu 18.04",
         "resources": {
             "system": {
-                "cpu": 400,
+                "cpu": 800,
                 "gpu": 1,
-                "memory": 4096,
+                "memory": 32768,
                 "storage": 65600
             },
             "hardware": [
@@ -386,7 +386,7 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
@@ -412,7 +412,7 @@
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
@@ -444,16 +444,16 @@
     {
         "id": 17,
         "hostname": "node17",
-        "model": "raspberrypi-4b",
+        "model": "jetson-nano",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "Raspbian GNU/Linux 10 (buster)",
+        "os": "ubuntu 18.04",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 0,
+                "gpu": 1,
                 "memory": 4096,
-                "storage": 131072
+                "storage": 65600
             },
             "hardware": [
                 {
@@ -464,7 +464,7 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
@@ -490,7 +490,7 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
@@ -516,22 +516,22 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
         "id": 20,
         "hostname": "node20",
-        "model": "jetson-nano",
+        "model": "raspberrypi-4b",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "ubuntu 18.04",
+        "os": "Raspbian GNU/Linux 10 (buster)",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 1,
+                "gpu": 0,
                 "memory": 4096,
-                "storage": 65600
+                "storage": 131072
             },
             "hardware": [
                 {
@@ -542,22 +542,22 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
         "id": 21,
         "hostname": "node21",
-        "model": "jetson-nano",
+        "model": "raspberrypi-4b",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "ubuntu 18.04",
+        "os": "Raspbian GNU/Linux 10 (buster)",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 1,
+                "gpu": 0,
                 "memory": 4096,
-                "storage": 65600
+                "storage": 131072
             },
             "hardware": [
                 {
@@ -568,22 +568,22 @@
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
         "id": 22,
         "hostname": "node22",
-        "model": "raspberrypi-4b",
+        "model": "jetson-xavier",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "Raspbian GNU/Linux 10 (buster)",
+        "os": "ubuntu 18.04",
         "resources": {
             "system": {
-                "cpu": 400,
-                "gpu": 0,
-                "memory": 4096,
-                "storage": 131072
+                "cpu": 800,
+                "gpu": 1,
+                "memory": 32768,
+                "storage": 65600
             },
             "hardware": [
                 {
@@ -594,22 +594,22 @@
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
         "id": 23,
         "hostname": "node23",
-        "model": "raspberrypi-4b",
+        "model": "jetson-nano",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "Raspbian GNU/Linux 10 (buster)",
+        "os": "ubuntu 18.04",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 0,
+                "gpu": 1,
                 "memory": 4096,
-                "storage": 131072
+                "storage": 65600
             },
             "hardware": [
                 {
@@ -626,16 +626,16 @@
     {
         "id": 24,
         "hostname": "node24",
-        "model": "raspberrypi-4b",
+        "model": "jetson-nano",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "Raspbian GNU/Linux 10 (buster)",
+        "os": "ubuntu 18.04",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 0,
+                "gpu": 1,
                 "memory": 4096,
-                "storage": 131072
+                "storage": 65600
             },
             "hardware": [
                 {
@@ -678,15 +678,15 @@
     {
         "id": 26,
         "hostname": "node26",
-        "model": "jetson-nano",
+        "model": "jetson-xavier",
         "ip": "172.22.152.175",
         "arch": "arm64",
         "os": "ubuntu 18.04",
         "resources": {
             "system": {
-                "cpu": 400,
+                "cpu": 800,
                 "gpu": 1,
-                "memory": 4096,
+                "memory": 32768,
                 "storage": 65600
             },
             "hardware": [
@@ -698,7 +698,7 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
@@ -724,22 +724,22 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
         "id": 28,
         "hostname": "node28",
-        "model": "raspberrypi-4b",
+        "model": "jetson-nano",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "Raspbian GNU/Linux 10 (buster)",
+        "os": "ubuntu 18.04",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 0,
+                "gpu": 1,
                 "memory": 4096,
-                "storage": 131072
+                "storage": 65600
             },
             "hardware": [
                 {
@@ -750,7 +750,7 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
@@ -776,7 +776,7 @@
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
@@ -808,16 +808,16 @@
     {
         "id": 31,
         "hostname": "node31",
-        "model": "raspberrypi-4b",
+        "model": "jetson-nano",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "Raspbian GNU/Linux 10 (buster)",
+        "os": "ubuntu 18.04",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 0,
+                "gpu": 1,
                 "memory": 4096,
-                "storage": 131072
+                "storage": 65600
             },
             "hardware": [
                 {
@@ -854,22 +854,22 @@
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
         "id": 33,
         "hostname": "node33",
-        "model": "raspberrypi-4b",
+        "model": "jetson-nano",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "Raspbian GNU/Linux 10 (buster)",
+        "os": "ubuntu 18.04",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 0,
+                "gpu": 1,
                 "memory": 4096,
-                "storage": 131072
+                "storage": 65600
             },
             "hardware": [
                 {
@@ -906,21 +906,21 @@
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
         "id": 35,
         "hostname": "node35",
-        "model": "jetson-xavier",
+        "model": "jetson-nano",
         "ip": "172.22.152.175",
         "arch": "arm64",
         "os": "ubuntu 18.04",
         "resources": {
             "system": {
-                "cpu": 800,
+                "cpu": 400,
                 "gpu": 1,
-                "memory": 32768,
+                "memory": 4096,
                 "storage": 65600
             },
             "hardware": [
@@ -938,16 +938,16 @@
     {
         "id": 36,
         "hostname": "node36",
-        "model": "jetson-nano",
+        "model": "raspberrypi-4b",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "ubuntu 18.04",
+        "os": "Raspbian GNU/Linux 10 (buster)",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 1,
+                "gpu": 0,
                 "memory": 4096,
-                "storage": 65600
+                "storage": 131072
             },
             "hardware": [
                 {
@@ -964,16 +964,16 @@
     {
         "id": 37,
         "hostname": "node37",
-        "model": "jetson-nano",
+        "model": "raspberrypi-4b",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "ubuntu 18.04",
+        "os": "Raspbian GNU/Linux 10 (buster)",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 1,
+                "gpu": 0,
                 "memory": 4096,
-                "storage": 65600
+                "storage": 131072
             },
             "hardware": [
                 {
@@ -1010,7 +1010,7 @@
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
@@ -1042,16 +1042,16 @@
     {
         "id": 40,
         "hostname": "node40",
-        "model": "jetson-xavier",
+        "model": "raspberrypi-4b",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "ubuntu 18.04",
+        "os": "Raspbian GNU/Linux 10 (buster)",
         "resources": {
             "system": {
-                "cpu": 800,
-                "gpu": 1,
-                "memory": 32768,
-                "storage": 65600
+                "cpu": 400,
+                "gpu": 0,
+                "memory": 4096,
+                "storage": 131072
             },
             "hardware": [
                 {
@@ -1088,22 +1088,22 @@
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
         "id": 42,
         "hostname": "node42",
-        "model": "raspberrypi-4b",
+        "model": "jetson-nano",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "Raspbian GNU/Linux 10 (buster)",
+        "os": "ubuntu 18.04",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 0,
+                "gpu": 1,
                 "memory": 4096,
-                "storage": 131072
+                "storage": 65600
             },
             "hardware": [
                 {
@@ -1114,7 +1114,7 @@
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
@@ -1218,22 +1218,22 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
         "id": 47,
         "hostname": "node47",
-        "model": "jetson-nano",
+        "model": "raspberrypi-4b",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "ubuntu 18.04",
+        "os": "Raspbian GNU/Linux 10 (buster)",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 1,
+                "gpu": 0,
                 "memory": 4096,
-                "storage": 65600
+                "storage": 131072
             },
             "hardware": [
                 {
@@ -1250,16 +1250,16 @@
     {
         "id": 48,
         "hostname": "node48",
-        "model": "raspberrypi-4b",
+        "model": "jetson-nano",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "Raspbian GNU/Linux 10 (buster)",
+        "os": "ubuntu 18.04",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 0,
+                "gpu": 1,
                 "memory": 4096,
-                "storage": 131072
+                "storage": 65600
             },
             "hardware": [
                 {
@@ -1276,16 +1276,16 @@
     {
         "id": 49,
         "hostname": "node49",
-        "model": "jetson-nano",
+        "model": "raspberrypi-4b",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "ubuntu 18.04",
+        "os": "Raspbian GNU/Linux 10 (buster)",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 1,
+                "gpu": 0,
                 "memory": 4096,
-                "storage": 65600
+                "storage": 131072
             },
             "hardware": [
                 {
@@ -1302,6 +1302,32 @@
     {
         "id": 50,
         "hostname": "node50",
+        "model": "jetson-xavier",
+        "ip": "172.22.152.175",
+        "arch": "arm64",
+        "os": "ubuntu 18.04",
+        "resources": {
+            "system": {
+                "cpu": 800,
+                "gpu": 1,
+                "memory": 32768,
+                "storage": 65600
+            },
+            "hardware": [
+                {
+                    "id": 50,
+                    "sensor": "IMX519",
+                    "rate": 0.02,
+                    "size": 1200
+                }
+            ]
+        },
+        "power": Infinity,
+        "location": 100
+    },
+    {
+        "id": 51,
+        "hostname": "node51",
         "model": "raspberrypi-4b",
         "ip": "172.22.152.175",
         "arch": "arm64",
@@ -1315,32 +1341,6 @@
             },
             "hardware": [
                 {
-                    "id": 50,
-                    "sensor": "IMX519",
-                    "rate": 0.02,
-                    "size": 1200
-                }
-            ]
-        },
-        "power": 1820,
-        "location": 100
-    },
-    {
-        "id": 51,
-        "hostname": "node51",
-        "model": "jetson-nano",
-        "ip": "172.22.152.175",
-        "arch": "arm64",
-        "os": "ubuntu 18.04",
-        "resources": {
-            "system": {
-                "cpu": 400,
-                "gpu": 1,
-                "memory": 4096,
-                "storage": 65600
-            },
-            "hardware": [
-                {
                     "id": 51,
                     "sensor": "IMX519",
                     "rate": 0.02,
@@ -1348,7 +1348,7 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
@@ -1400,7 +1400,7 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
@@ -1426,7 +1426,7 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
@@ -1504,22 +1504,22 @@
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
         "id": 58,
         "hostname": "node58",
-        "model": "raspberrypi-4b",
+        "model": "jetson-nano",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "Raspbian GNU/Linux 10 (buster)",
+        "os": "ubuntu 18.04",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 0,
+                "gpu": 1,
                 "memory": 4096,
-                "storage": 131072
+                "storage": 65600
             },
             "hardware": [
                 {
@@ -1536,16 +1536,16 @@
     {
         "id": 59,
         "hostname": "node59",
-        "model": "raspberrypi-4b",
+        "model": "jetson-nano",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "Raspbian GNU/Linux 10 (buster)",
+        "os": "ubuntu 18.04",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 0,
+                "gpu": 1,
                 "memory": 4096,
-                "storage": 131072
+                "storage": 65600
             },
             "hardware": [
                 {
@@ -1556,7 +1556,7 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
@@ -1660,7 +1660,7 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
@@ -1686,7 +1686,7 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
@@ -1764,22 +1764,22 @@
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
         "id": 68,
         "hostname": "node68",
-        "model": "jetson-nano",
+        "model": "raspberrypi-4b",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "ubuntu 18.04",
+        "os": "Raspbian GNU/Linux 10 (buster)",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 1,
+                "gpu": 0,
                 "memory": 4096,
-                "storage": 65600
+                "storage": 131072
             },
             "hardware": [
                 {
@@ -1790,7 +1790,7 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
@@ -1868,7 +1868,7 @@
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
@@ -1920,7 +1920,7 @@
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
@@ -1972,21 +1972,21 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
         "id": 76,
         "hostname": "node76",
-        "model": "jetson-nano",
+        "model": "jetson-xavier",
         "ip": "172.22.152.175",
         "arch": "arm64",
         "os": "ubuntu 18.04",
         "resources": {
             "system": {
-                "cpu": 400,
+                "cpu": 800,
                 "gpu": 1,
-                "memory": 4096,
+                "memory": 32768,
                 "storage": 65600
             },
             "hardware": [
@@ -1998,22 +1998,22 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
         "id": 77,
         "hostname": "node77",
-        "model": "raspberrypi-4b",
+        "model": "jetson-xavier",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "Raspbian GNU/Linux 10 (buster)",
+        "os": "ubuntu 18.04",
         "resources": {
             "system": {
-                "cpu": 400,
-                "gpu": 0,
-                "memory": 4096,
-                "storage": 131072
+                "cpu": 800,
+                "gpu": 1,
+                "memory": 32768,
+                "storage": 65600
             },
             "hardware": [
                 {
@@ -2076,22 +2076,22 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
         "id": 80,
         "hostname": "node80",
-        "model": "jetson-nano",
+        "model": "raspberrypi-4b",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "ubuntu 18.04",
+        "os": "Raspbian GNU/Linux 10 (buster)",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 1,
+                "gpu": 0,
                 "memory": 4096,
-                "storage": 65600
+                "storage": 131072
             },
             "hardware": [
                 {
@@ -2102,22 +2102,22 @@
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
         "id": 81,
         "hostname": "node81",
-        "model": "jetson-nano",
+        "model": "raspberrypi-4b",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "ubuntu 18.04",
+        "os": "Raspbian GNU/Linux 10 (buster)",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 1,
+                "gpu": 0,
                 "memory": 4096,
-                "storage": 65600
+                "storage": 131072
             },
             "hardware": [
                 {
@@ -2134,16 +2134,16 @@
     {
         "id": 82,
         "hostname": "node82",
-        "model": "raspberrypi-4b",
+        "model": "jetson-nano",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "Raspbian GNU/Linux 10 (buster)",
+        "os": "ubuntu 18.04",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 0,
+                "gpu": 1,
                 "memory": 4096,
-                "storage": 131072
+                "storage": 65600
             },
             "hardware": [
                 {
@@ -2160,32 +2160,6 @@
     {
         "id": 83,
         "hostname": "node83",
-        "model": "jetson-xavier",
-        "ip": "172.22.152.175",
-        "arch": "arm64",
-        "os": "ubuntu 18.04",
-        "resources": {
-            "system": {
-                "cpu": 800,
-                "gpu": 1,
-                "memory": 32768,
-                "storage": 65600
-            },
-            "hardware": [
-                {
-                    "id": 83,
-                    "sensor": "IMX519",
-                    "rate": 0.02,
-                    "size": 1200
-                }
-            ]
-        },
-        "power": Infinity,
-        "location": 100
-    },
-    {
-        "id": 84,
-        "hostname": "node84",
         "model": "raspberrypi-4b",
         "ip": "172.22.152.175",
         "arch": "arm64",
@@ -2199,19 +2173,19 @@
             },
             "hardware": [
                 {
-                    "id": 84,
+                    "id": 83,
                     "sensor": "IMX519",
                     "rate": 0.02,
                     "size": 1200
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
-        "id": 85,
-        "hostname": "node85",
+        "id": 84,
+        "hostname": "node84",
         "model": "jetson-nano",
         "ip": "172.22.152.175",
         "arch": "arm64",
@@ -2222,6 +2196,32 @@
                 "gpu": 1,
                 "memory": 4096,
                 "storage": 65600
+            },
+            "hardware": [
+                {
+                    "id": 84,
+                    "sensor": "IMX519",
+                    "rate": 0.02,
+                    "size": 1200
+                }
+            ]
+        },
+        "power": 1820,
+        "location": 100
+    },
+    {
+        "id": 85,
+        "hostname": "node85",
+        "model": "raspberrypi-4b",
+        "ip": "172.22.152.175",
+        "arch": "arm64",
+        "os": "Raspbian GNU/Linux 10 (buster)",
+        "resources": {
+            "system": {
+                "cpu": 400,
+                "gpu": 0,
+                "memory": 4096,
+                "storage": 131072
             },
             "hardware": [
                 {
@@ -2258,7 +2258,7 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
@@ -2316,15 +2316,15 @@
     {
         "id": 89,
         "hostname": "node89",
-        "model": "jetson-xavier",
+        "model": "jetson-nano",
         "ip": "172.22.152.175",
         "arch": "arm64",
         "os": "ubuntu 18.04",
         "resources": {
             "system": {
-                "cpu": 800,
+                "cpu": 400,
                 "gpu": 1,
-                "memory": 32768,
+                "memory": 4096,
                 "storage": 65600
             },
             "hardware": [
@@ -2336,22 +2336,22 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
         "id": 90,
         "hostname": "node90",
-        "model": "raspberrypi-4b",
+        "model": "jetson-nano",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "Raspbian GNU/Linux 10 (buster)",
+        "os": "ubuntu 18.04",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 0,
+                "gpu": 1,
                 "memory": 4096,
-                "storage": 131072
+                "storage": 65600
             },
             "hardware": [
                 {
@@ -2362,7 +2362,7 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
@@ -2414,21 +2414,21 @@
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
         "id": 93,
         "hostname": "node93",
-        "model": "jetson-nano",
+        "model": "jetson-xavier",
         "ip": "172.22.152.175",
         "arch": "arm64",
         "os": "ubuntu 18.04",
         "resources": {
             "system": {
-                "cpu": 400,
+                "cpu": 800,
                 "gpu": 1,
-                "memory": 4096,
+                "memory": 32768,
                 "storage": 65600
             },
             "hardware": [
@@ -2440,22 +2440,22 @@
                 }
             ]
         },
-        "power": 1820,
+        "power": Infinity,
         "location": 100
     },
     {
         "id": 94,
         "hostname": "node94",
-        "model": "jetson-nano",
+        "model": "raspberrypi-4b",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "ubuntu 18.04",
+        "os": "Raspbian GNU/Linux 10 (buster)",
         "resources": {
             "system": {
                 "cpu": 400,
-                "gpu": 1,
+                "gpu": 0,
                 "memory": 4096,
-                "storage": 65600
+                "storage": 131072
             },
             "hardware": [
                 {
@@ -2518,7 +2518,7 @@
                 }
             ]
         },
-        "power": Infinity,
+        "power": 1820,
         "location": 100
     },
     {
@@ -2576,16 +2576,16 @@
     {
         "id": 99,
         "hostname": "node99",
-        "model": "raspberrypi-4b",
+        "model": "jetson-xavier",
         "ip": "172.22.152.175",
         "arch": "arm64",
-        "os": "Raspbian GNU/Linux 10 (buster)",
+        "os": "ubuntu 18.04",
         "resources": {
             "system": {
-                "cpu": 400,
-                "gpu": 0,
-                "memory": 4096,
-                "storage": 131072
+                "cpu": 800,
+                "gpu": 1,
+                "memory": 32768,
+                "storage": 65600
             },
             "hardware": [
                 {

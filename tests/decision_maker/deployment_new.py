@@ -16,6 +16,9 @@ from LocalSearch_deploy import LocalSearch_deploy
 # from ORTools_deploy import ORTools_Decider
 from new.ORTools_deploy import ORTools_Decider
 from new.Greedy_deploy import Greedy_decider
+from new.Greedy_ODP import Greedy_ODP
+from new.ODP_LS import ODP_LS_Decider
+from new.ODP_TabuSearch import ODP_TS_Decider
 from new.LocalSearch_deploy import LocalSearch_new
 from new.ILS import Iterated_LS_decider
 from new.SA_deploy import SA_Decider
@@ -63,7 +66,7 @@ def print_table(data):
             print(f" {item} |", end="")
         print()
 
-def generate_transmission_rate_matrix(n, min_rate=1, max_rate=5):
+def generate_transmission_rate_matrix(n, min_rate=1, max_rate=2.5):
     transmission_matrix = np.full((n, n), np.inf)
 
     # diagnose to zero
@@ -207,6 +210,15 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
         elif solver == "ILS":
             decision_maker = Iterated_LS_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
                                             transmission_matrix)
+        elif solver == "Greedy_ODP":
+            decision_maker = Greedy_ODP(workflow_list, microservice_data, operator_data, device_list, operator_list,
+                                            transmission_matrix)
+        elif solver == "ODP-LS":
+            decision_maker = ODP_LS_Decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
+                                        transmission_matrix)
+        elif solver == "ODP-TS":
+            decision_maker = ODP_TS_Decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
+                                        transmission_matrix)
         start_time = time.time()
         solution, utility = decision_maker.make_decision()
         res_objective = utility
@@ -288,8 +300,8 @@ def main():
 
     parser = argparse.ArgumentParser(description='test script.')
 
-    parser.add_argument('-d', '--num_devices', default=30, type=int, help='number of devices')
-    parser.add_argument('-r', '--num_requests', default=30, type=float, help='number of requests')
+    parser.add_argument('-d', '--num_devices', default=20, type=int, help='number of devices')
+    parser.add_argument('-r', '--num_requests', default=20, type=float, help='number of requests')
     parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
     parser.add_argument('-i', '--iterations', type=str, default=1, help='iteration times')
 
@@ -304,7 +316,9 @@ def main():
         ["Algorithm", "Objective", "Time"]
     ]
 
-    all_algorithms = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new", "ILS"]
+    all_algorithms = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new",
+                      "ILS",
+                      "ODP-LS", "ODP-TS"]
     sum_times = []
     sum_objectives = []
     if solver == "All":
@@ -372,7 +386,7 @@ def evaluation_experiments():
     iterations = 3
     # num_devices = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
     # num_requests = [10]
-    solvers = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new", "ILS"]
+    solvers = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new", "ILS", "ODP-LS", "ODP-TS"]
 
     for i, device_num in enumerate(num_devices):
         # for j in range(i + 1):
@@ -404,7 +418,7 @@ def evaluation_experiments():
                 data['algorithm'].append(algorithm)
     # record finishes, save into csv
     df = pd.DataFrame(data)
-    df.to_csv('results/evaluation_18.csv', index=False)
+    df.to_csv('results/evaluation_20.csv', index=False)
 
 
 if __name__ == '__main__':
