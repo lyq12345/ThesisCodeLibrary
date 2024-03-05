@@ -480,6 +480,6 @@ def evaluation_experiments():
 
 
 if __name__ == '__main__':
-    # main()
-    evaluation_experiments()
+    main()
+    # evaluation_experiments()
 
