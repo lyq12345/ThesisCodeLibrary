@@ -39,7 +39,7 @@ def generate_workflows(num_workflows, device_list):
 
     for i in range(num_workflows):
         workflow = random.choice(workflow_templates)
-        delay = random.uniform(2.0, 10.0)
+        delay = random.uniform(5.0, 15.0)
         sensor_id = random.choice(sensor_list)
         rate = device_list[sensor_id]["resources"]["hardware"][0]["rate"]
         size = device_list[sensor_id]["resources"]["hardware"][0]["size"]

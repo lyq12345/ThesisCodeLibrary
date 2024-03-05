@@ -19,6 +19,8 @@ from new.ORTools_deploy import ORTools_Decider
 from new.Greedy_deploy import Greedy_decider
 from new.LocalSearch_deploy import LocalSearch_new
 from new.ILS import Iterated_LS_decider
+from new.ODP_LS import ODP_LS_Decider
+from new.ODP_TabuSearch import ODP_TS_Decider
 from new.SA_deploy import SA_Decider
 from pathlib import Path
 import sys
@@ -37,7 +39,7 @@ with open(os.path.join(cur_dir, "../status_tracker/speed_lookup_table.json"), 'r
 with open(os.path.join(cur_dir, "../status_tracker/power_lookup_table.json"), 'r') as file:
     power_lookup_table = json.load(file)
 
-data = {'group': [], 'Normalized objective': [], 'time': [], 'algorithm': []}
+data = {'group': [], 'Normalized objective': [], 'time': [], 'algorithm': [], 'CPU usage': [], 'Memory usage': []}
 
 def read_json(filename):
     with open(filename, 'r') as json_file:
@@ -214,6 +216,8 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
 
     sum_elapsed_time = 0.0
     sum_utility = 0.0
+    sum_cpu_usage = 0.0
+    sum_memory_usage = 0.0
 
     res_objective = 0
     res_time = 0
@@ -223,12 +227,12 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
         if solver == "TOPSIS":
             decision_maker = TOPSIS_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
                                             transmission_matrix)
-        elif solver == "LocalSearch":
-            decision_maker = LocalSearch_deploy(workflow_list, microservice_data, operator_data, device_list,
-                                                operator_list, transmission_matrix)
-        elif solver == "ORTools":
-            decision_maker = ORTools_Decider(workflow_list, microservice_data, operator_data, device_list,
-                                             operator_list, transmission_matrix)
+        # elif solver == "LocalSearch":
+        #     decision_maker = LocalSearch_deploy(workflow_list, microservice_data, operator_data, device_list,
+        #                                         operator_list, transmission_matrix)
+        # elif solver == "ORTools":
+        #     decision_maker = ORTools_Decider(workflow_list, microservice_data, operator_data, device_list,
+        #                                      operator_list, transmission_matrix)
         # elif solver == "Greedy":
         #     decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
         elif solver == "LocalSearch_new":
@@ -249,6 +253,12 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
         elif solver == "ILS":
             decision_maker = Iterated_LS_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
                                             transmission_matrix)
+        elif solver == "ODP-LS":
+            decision_maker = ODP_LS_Decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
+                                            transmission_matrix)
+        elif solver == "ODP-TS":
+            decision_maker = ODP_TS_Decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
+                                            transmission_matrix)
         start_time = time.time()
         solution, utility = decision_maker.make_decision()
         res_objective = utility
@@ -256,8 +266,12 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
         elapsed_time = end_time - start_time
         res_time = elapsed_time
 
+        cpu_usage, memory_usage = calculate_resource_consumption(solution)
+
         sum_elapsed_time += elapsed_time
         sum_utility += utility
+        sum_cpu_usage += cpu_usage
+        sum_memory_usage += memory_usage
 
         if display:
             print("Solution: ")
@@ -309,19 +323,23 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
                 print("--------------------------------------------------------------")
             print(f"Decision making time: {elapsed_time} s")
             print("Resource consumption: ")
-            cpu_usage, memory_usage = calculate_resource_consumption(solution)
+            # cpu_usage, memory_usage = calculate_resource_consumption(solution)
             print(f"CPU Usage: {cpu_usage}")
             print(f"Memory Usage: {memory_usage}")
             print(f"Overall Objective: {res_objective}")
 
     avg_nol_objective = (sum_utility / iterations) / len(workflow_list)
     avg_time = sum_elapsed_time / iterations
+    avg_cpu_usage = sum_cpu_usage / iterations
+    avg_memory_usage = sum_memory_usage / iterations
     if record:
         data['Normalized objective'].append(avg_nol_objective)
         data['time'].append(avg_time)
+        data['CPU usage'].append(avg_cpu_usage)
+        data['Memory usage'].append(avg_memory_usage)
         data['group'].append(len(workflow_list))
         data['algorithm'].append(solver)
-    return avg_nol_objective, avg_time
+    return avg_nol_objective, avg_time, avg_cpu_usage, avg_memory_usage
 
 
 def main():
@@ -346,7 +364,7 @@ def main():
         ["Algorithm", "Objective", "Time"]
     ]
 
-    all_algorithms = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new", "ILS"]
+    all_algorithms = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new", "ILS", "ODP-LS", "ODP-TS"]
     sum_times = []
     sum_objectives = []
     if solver == "All":
@@ -368,11 +386,11 @@ def main():
         if solver == "All":
             for i in range(len(all_algorithms)):
                 algorithm = all_algorithms[i]
-                obj, time = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, algorithm)
+                obj, time, cpu, memory = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, algorithm)
                 sum_times[i] += time
                 sum_objectives[i] += obj
         else:
-            obj, time = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list,
+            obj, time, cpu, memory = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list,
                                                     transmission_matrix, solver)
             sum_times[0] += time
             sum_objectives[0] += obj
@@ -416,7 +434,7 @@ def evaluation_experiments():
     iterations = 3
     # num_devices = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
     # num_requests = [10]
-    solvers = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new", "ILS"]
+    solvers = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new", "ILS", "ODP-LS", "ODP-TS"]
 
     for i, device_num in enumerate(num_devices):
         # for j in range(i + 1):
@@ -424,6 +442,8 @@ def evaluation_experiments():
             request_num = num_requests[j]
             sum_times = [0.0 for _ in range(len(solvers))]
             sum_objectives = [0.0 for _ in range(len(solvers))]
+            sum_cpu_usages = [0.0 for _ in range(len(solvers))]
+            sum_memory_usages = [0.0 for _ in range(len(solvers))]
             for itr in range(iterations):
                 device_list = generate_devices(device_num)
                 workflow_list = generate_workflows(request_num, device_list)
@@ -432,26 +452,34 @@ def evaluation_experiments():
                 transmission_matrix = generate_transmission_rate_matrix(len(device_list))
                 for i, solver in enumerate(solvers):
                     print(f"Running i={request_num} k={device_num}, solver={solver}, iteration={itr+1}/{iterations}")
-                    obj, time = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, solver, display=False,
+                    obj, time, cpu, memory = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, solver, display=False,
                                                 record=False, iterations=1)
                     sum_times[i] += time
                     sum_objectives[i] += obj
+                    sum_cpu_usages[i] += cpu
+                    sum_memory_usages[i] += memory
             avg_times = [item / iterations for item in sum_times]
             avg_objectives = [item / iterations for item in sum_objectives]
+            avg_cpus = [item / iterations for item in sum_cpu_usages]
+            avg_memorys = [item / iterations for item in sum_memory_usages]
             for i in range(len(avg_times)):
                 time = avg_times[i]
                 obj = avg_objectives[i]
+                cpu = avg_cpus[i]
+                memory = avg_memorys[i]
                 algorithm = solvers[i]
                 data['Normalized objective'].append(obj)
                 data['time'].append(time)
+                data['CPU usage'].append(cpu)
+                data['Memory usage'].append(memory)
                 data['group'].append(request_num)
                 data['algorithm'].append(algorithm)
     # record finishes, save into csv
     df = pd.DataFrame(data)
-    df.to_csv('results/evaluation_18.csv', index=False)
+    df.to_csv('results/evaluation_21.csv', index=False)
 
 
 if __name__ == '__main__':
-    main()
-    # evaluation_experiments()
+    # main()
+    evaluation_experiments()
 
