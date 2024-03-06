@@ -12,6 +12,7 @@ from enum import Enum
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 # from greedy_deploy import Greedy_Decider
 # from MIP_deploy import MIP_Decider
+from new.utils import calculate_effective_transmission_time
 from TOPSIS_deploy import TOPSIS_decider
 from LocalSearch_deploy import LocalSearch_deploy
 # from ORTools_deploy import ORTools_Decider
@@ -29,6 +30,7 @@ from status_tracker.rescons_models import cpu_consumption
 # from status_tracker.task_mock import generate_tasks
 from status_tracker.workflow_mock import generate_workflows
 from status_tracker.device_mock import generate_devices
+from status_tracker.AP_mock import generate_access_points
 
 cur_dir = os.getcwd()
 
@@ -380,7 +382,9 @@ def main():
         microservice_data = create_microservice_model(workflow_list)
         operator_data = create_operator_model(operator_list, microservice_data["ms_types"])
         transmission_matrix = generate_transmission_rate_matrix(len(device_list))
-        delay_matrix, bandwidth_matrix, linktype_matrix = generate_network_model(len(device_list))
+        # delay_matrix, bandwidth_matrix, linktype_matrix = generate_network_model(len(device_list))
+        access_points = generate_access_points(-20, 80, -20, 60, 0, 60, 5)
+        calculate_effective_transmission_time(device_list, access_points)
 
 
         if solver == "All":
