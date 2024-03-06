@@ -20,7 +20,7 @@ with open(os.path.join(cur_dir, "../status_tracker/power_lookup_table.json"), 'r
     power_lookup_table = json.load(file)
 
 class Iterated_LS_decider:
-    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, iteration_time=20, max_no_improvement=10):
+    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time, iteration_time=20, max_no_improvement=10):
         self.workflows = workflows
         self.microservice_data = microservice_data
         """
@@ -40,6 +40,7 @@ class Iterated_LS_decider:
         self.operator_profiles = operators
         self.operator_loads = [0 for _ in range(len(operator_data))]
 
+        self.effective_time = effective_time
         self.transmission_matrix = transmission_matrix
         self.AMax = []
         self.Amin = []
@@ -64,7 +65,11 @@ class Iterated_LS_decider:
             microservices = workflow["workflow"]
             pre_op_id = -1
             for id, microservice in enumerate(microservices):
-                op_id = solution[ms_id][0]
+                mapping = solution[ms_id]
+                if len(mapping) == 0:
+                    ms_id += 1
+                    continue
+                op_id = mapping[0]
                 if op_id not in operator_graph.keys():
                     operator_graph[op_id] = []
                 if id == 0:
@@ -122,6 +127,8 @@ class Iterated_LS_decider:
             memory_sum += dev["resources"]["system"]["memory"]
         deployed_op_ids = []
         for i, mapping in enumerate(solution):
+            if len(mapping) == 0:
+                continue
             op_id = mapping[0]
             if op_id in deployed_op_ids:
                 continue
@@ -167,6 +174,8 @@ class Iterated_LS_decider:
         ops_on_devices = [[] for _ in range(len(devices))]
         traversed_op_ids = []
         for mapping in current_solution:
+            if len(mapping) == 0:
+                continue
             op_id = mapping[0]
             op_code = mapping[1]
             dev_id = mapping[2]
@@ -180,6 +189,8 @@ class Iterated_LS_decider:
             for other_dev_id in filtered_dev_ids:
                 new_neighbor = copy.deepcopy(current_solution)
                 for ms_id, mapping in enumerate(new_neighbor):
+                    if len(mapping) == 0:
+                        continue
                     if mapping[2] == dev_id:
                         new_neighbor[ms_id][2] = other_dev_id
                 # TODO: effective remove repeatable?
@@ -190,6 +201,8 @@ class Iterated_LS_decider:
         # move an operator from u to a new v
         moved_op_ids = []
         for mapping in current_solution:
+            if len(mapping) == 0:
+                continue
             op_id = mapping[0]
             if op_id in moved_op_ids:
                 continue
@@ -200,6 +213,8 @@ class Iterated_LS_decider:
             for other_dev_id in filtered_dev_ids:
                 new_neighbor = copy.deepcopy(current_solution)
                 for mapping in new_neighbor:
+                    if len(mapping) == 0:
+                        continue
                     if mapping[0] == op_id:
                         mapping[2] = other_dev_id
                 # TODO: effective remove repeatable?
@@ -211,6 +226,8 @@ class Iterated_LS_decider:
         # change deployed operators to other compatible operator
         changed_op_ids = []
         for ms_id, mapping in enumerate(current_solution):
+            if len(mapping) == 0:
+                continue
             # device_copy = copy.deepcopy(devices)
             op_id = mapping[0]
             if op_id in changed_op_ids:
@@ -233,6 +250,8 @@ class Iterated_LS_decider:
                 if self.is_system_consistent(devices[dev_id]["resources"]["system"], resource_requirements):
                     new_neighbor = copy.deepcopy(current_solution)
                     for mapping in new_neighbor:
+                        if len(mapping) == 0:
+                            continue
                         if mapping[0] == op_id:
                             mapping[1] = other_op_code
                     if new_neighbor not in neighbors:
@@ -245,6 +264,8 @@ class Iterated_LS_decider:
         same_microservices = {}
         # categorize microservices
         for ms_id, mapping in enumerate(current_solution):
+            if len(mapping) == 0:
+                continue
             op_id = mapping[0]
             service_code = self.microservice_data["ms_types"][ms_id]
             if service_code not in same_microservices.keys():
@@ -287,6 +308,8 @@ class Iterated_LS_decider:
             new_op_mapping = None
             to_op_mapping = None
             for mapping in current_solution:
+                if len(mapping) == 0:
+                    continue
                 if mapping[0] == new_op_id:
                     new_op_mapping = mapping
                 if mapping[0] == to_op_id:
@@ -307,6 +330,8 @@ class Iterated_LS_decider:
 
             # 3. change solution ()
             for id, mapping in enumerate(current_solution):
+                if len(mapping) == 0:
+                    continue
                 if mapping[0] == new_op_id:
                     mapping[3] += rate
                 if mapping[0] == to_op_id:
@@ -455,9 +480,13 @@ class Iterated_LS_decider:
             acc_min = self.Amin[wf_id]
             accuracy = 1
             delay = 0
+            unsatisfied = False
 
             for i in range(len(workflow["workflow"])):
                 mapping = solution[ms_id]
+                if len(mapping) == 0:
+                    unsatisfied = True
+                    break
                 op_code = mapping[1]
                 dev_id = mapping[2]
                 dev_name = self.devices[dev_id]["model"]
@@ -471,6 +500,8 @@ class Iterated_LS_decider:
                     previous_dev_id = solution[ms_id - 1][2]
                     delay += self.transmission_matrix[previous_dev_id][dev_id]
                 ms_id += 1
+            if unsatisfied:
+                continue
             wa = 0.05
             wb = 0.95
             if acc_max == acc_min:
@@ -529,6 +560,8 @@ class Iterated_LS_decider:
     def consume_operators(self, devices, solution):
         deployed_op_ids = []
         for mapping in solution:
+            if len(mapping) == 0:
+                continue
             if mapping[0] in deployed_op_ids:
                 continue
             self.deploy(devices, mapping)

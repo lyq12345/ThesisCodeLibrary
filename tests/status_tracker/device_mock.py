@@ -95,7 +95,7 @@ def create_from_model(id, model, sensor, power):
 
 def allocate_types(num_devices):
     categories = ['edge-server', 'IoT-insitu', 'IoT-mobile']
-    weights = [0.6, 0.2, 0.2]
+    weights = [0.6, 0.3, 0.1]
     allocated_categories = random.choices(categories, weights=weights, k=num_devices)
     return allocated_categories
 

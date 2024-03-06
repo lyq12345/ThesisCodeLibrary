@@ -19,7 +19,7 @@ with open(os.path.join(cur_dir, "../status_tracker/power_lookup_table.json"), 'r
     power_lookup_table = json.load(file)
 
 class ODP_LS_Decider:
-    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix):
+    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time):
         self.wa = 0.05
         self.wb = 0.95
         self.workflows = workflows
@@ -42,6 +42,7 @@ class ODP_LS_Decider:
         self.operator_loads = [0 for _ in range(len(operator_data))]
 
         self.transmission_matrix = transmission_matrix
+        self.effective_time = effective_time
         self.AMax = []
         self.Amin = []
         self.calculate_max_min_acc(workflows)
@@ -136,6 +137,8 @@ class ODP_LS_Decider:
             memory_sum += dev["resources"]["system"]["memory"]
         deployed_op_ids = []
         for i, mapping in enumerate(solution):
+            if len(mapping) == 0:
+                continue
             op_id = mapping[0]
             if op_id in deployed_op_ids:
                 continue
@@ -171,6 +174,8 @@ class ODP_LS_Decider:
         ops_on_devices = [[] for _ in range(len(devices))]
         traversed_op_ids = []
         for mapping in current_solution:
+            if len(mapping) == 0:
+                continue
             op_id = mapping[0]
             op_code = mapping[1]
             dev_id = mapping[2]
@@ -184,6 +189,8 @@ class ODP_LS_Decider:
             for other_dev_id in filtered_dev_ids:
                 new_neighbor = copy.deepcopy(current_solution)
                 for ms_id, mapping in enumerate(new_neighbor):
+                    if len(mapping) == 0:
+                        continue
                     if mapping[2] == dev_id:
                         new_neighbor[ms_id][2] = other_dev_id
                 # TODO: effective remove repeatable?
@@ -194,6 +201,8 @@ class ODP_LS_Decider:
         # move an operator from u to a new v
         moved_op_ids = []
         for mapping in current_solution:
+            if len(mapping) == 0:
+                continue
             op_id = mapping[0]
             if op_id in moved_op_ids:
                 continue
@@ -204,6 +213,8 @@ class ODP_LS_Decider:
             for other_dev_id in filtered_dev_ids:
                 new_neighbor = copy.deepcopy(current_solution)
                 for mapping in new_neighbor:
+                    if len(mapping) == 0:
+                        continue
                     if mapping[0] == op_id:
                         mapping[2] = other_dev_id
                 # TODO: effective remove repeatable?
@@ -225,6 +236,8 @@ class ODP_LS_Decider:
                     continue
                 pre_mapping = current_solution[ms_id-1]
                 mapping = current_solution[ms_id]
+                if len(pre_mapping) == 0 or len(mapping) == 0:
+                    continue
                 if mapping[2] != pre_mapping[2]:
                     connecting_mappings.append([pre_mapping, mapping])
                 ms_id += 1
@@ -255,6 +268,8 @@ class ODP_LS_Decider:
             if self.is_system_consistent(devices[dev_id_2]["resources"]["system"], op_1_resource):
                 new_neighbor = copy.deepcopy(current_solution)
                 for mapping in new_neighbor:
+                    if len(mapping) == 0:
+                        continue
                     if mapping[0] == op_id_1:
                         mapping[2] = dev_id_2
                 if new_neighbor not in neighbors:
@@ -277,6 +292,8 @@ class ODP_LS_Decider:
         # consume the devices
         deployed_op_ids = []
         for mapping in current_solution:
+            if len(mapping) == 0:
+                continue
             if mapping[0] in deployed_op_ids:
                 continue
             self.deploy(device_copy, mapping)
@@ -327,17 +344,6 @@ class ODP_LS_Decider:
                 break
 
         return best_solution, best_utility
-
-    def tabu_search(self):
-        S1, F1 = self.local_search()
-        F_star = float("inf")
-        S_star = None
-        S = S1
-        tabu_list = []
-
-        while True:
-            improvement = False
-
 
     def is_system_consistent(self, system_resources, system_requirements):
         for key, value in system_requirements.items():
@@ -412,9 +418,13 @@ class ODP_LS_Decider:
             acc_min = self.Amin[wf_id]
             accuracy = 1
             delay = 0
+            unsatisfied = False
 
             for i in range(len(workflow["workflow"])):
                 mapping = solution[ms_id]
+                if len(mapping) == 0:
+                    unsatisfied = True
+                    break
                 op_code = mapping[1]
                 dev_id = mapping[2]
                 dev_name = self.devices[dev_id]["model"]
@@ -428,6 +438,8 @@ class ODP_LS_Decider:
                     previous_dev_id = solution[ms_id - 1][2]
                     delay += self.transmission_matrix[previous_dev_id][dev_id]
                 ms_id += 1
+            if unsatisfied:
+                continue
             # wa = 0.05
             # wb = 0.95
             if acc_max == acc_min:

@@ -29,7 +29,7 @@ For each workflow:
         until it's full; 
 """
 class Greedy_ODP:
-    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, link_penalty_matrix=None):
+    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time, link_penalty_matrix=None):
         self.wa = 0.05
         self.wb = 0.95
         self.workflows = workflows
@@ -47,6 +47,7 @@ class Greedy_ODP:
         self.operator_profiles = operators
         self.operator_loads = [0.0 for _ in range(len(operator_data))]
 
+        self.effective_time = effective_time
         self.transmission_matrix = transmission_matrix
         self.link_penalty_matrix = [[0 for j in range(len(devices))] for i in range(len(devices))]
         if link_penalty_matrix is None:
@@ -194,6 +195,8 @@ class Greedy_ODP:
         ram_consumptions = [0] * len(self.original_devices)
         deployed_op_ids = []
         for i, mapping in enumerate(solution):
+            if len(mapping) == 0:
+                continue
             op_id = mapping[0]
             if op_id in deployed_op_ids:
                 continue
@@ -488,12 +491,12 @@ class Greedy_ODP:
                     # this microservice is not satisfied
                     # solution[ms_id] = best_mapping
                     continue
-                best_mapping = None
 
                 best_mapping = self.find_best_mapping_multi(mapping_candidates, previous_mapping)
 
                 if best_mapping is None:
                     print("No best mapping found!")
+                    continue
                 if best_mapping[0] in [item[0] for item in solution if len(item)>0]:
                     self.reuse(self.devices, best_mapping, rate)
                 else:

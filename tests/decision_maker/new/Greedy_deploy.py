@@ -29,10 +29,11 @@ For each workflow:
         until it's full; 
 """
 class Greedy_decider:
-    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, policy="accfirst"):
+    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time, policy="accfirst"):
         self.workflows = workflows
         self.policy = policy
         self.microservice_data = microservice_data
+        self.effective_time = effective_time
         """
         microservices_data = {
             "microservices_graph": None,
@@ -140,6 +141,24 @@ class Greedy_decider:
             sum_uti += utility
         return sum_uti
 
+    def calculate_workflow_satisfication(self, solution):
+        satisfied_num = 0
+        ms_id = 0
+        for wf_id, workflow in enumerate(self.workflows):
+            unsatisfied = False
+
+            for i in range(len(workflow["workflow"])):
+                mapping = solution[ms_id]
+                if len(mapping) == 0:
+                    unsatisfied = True
+                    break
+                ms_id += 1
+            if unsatisfied:
+                continue
+            # utility = ((0.3*accuracy - 0.7*max(0, (delay - delay_tol)/delay))+1)/2
+            satisfied_num += 1
+        return satisfied_num
+
     def calculate_delay(self, operator_id, source_device_id, device_id):
         device_model = self.devices[device_id]["model"]
         transmission_delay = self.transmission_matrix[source_device_id, device_id]
@@ -157,6 +176,8 @@ class Greedy_decider:
         ram_consumptions = [0] * len(self.original_devices)
         deployed_op_ids = []
         for i, mapping in enumerate(solution):
+            if len(mapping) == 0:
+                continue
             op_id = mapping[0]
             if op_id in deployed_op_ids:
                 continue
@@ -425,6 +446,7 @@ class Greedy_decider:
 
                 if best_mapping is None:
                     print("No best mapping found!")
+                    continue
                 if best_mapping[0] in [item[0] for item in solution if len(item)>0]:
                     self.reuse(self.devices, best_mapping, rate)
                 else:

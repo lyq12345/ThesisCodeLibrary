@@ -58,7 +58,7 @@ def print_table(data):
     # 打印分隔线
     print("|", end="")
     for _ in data[0]:
-        print("------|", end="")
+        print("---------------------|", end="")
     print()
 
     # 打印数据行
@@ -156,7 +156,7 @@ def create_operator_model(operators, ms_types):
 
 
 
-def make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, solver="LocalSearch", display=True,
+def make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, effective_time, solver="LocalSearch", display=True,
                                 record=False, iterations=1):
     operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
     operator_list = read_json(operator_file)
@@ -182,6 +182,24 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
         power = power_lookup_table[operator_id][device_model]
         return power
 
+    def calculate_workflow_satisfication(workflows, solution):
+        satisfied_num = 0
+        ms_id = 0
+        for wf_id, workflow in enumerate(workflows):
+            unsatisfied = False
+
+            for i in range(len(workflow["workflow"])):
+                mapping = solution[ms_id]
+                if len(mapping) == 0:
+                    unsatisfied = True
+                    break
+                ms_id += 1
+            if unsatisfied:
+                continue
+            # utility = ((0.3*accuracy - 0.7*max(0, (delay - delay_tol)/delay))+1)/2
+            satisfied_num += 1
+        return satisfied_num
+
     def calculate_resource_consumption(solution):
         cpu_consumptions = [0] * len(device_list)
         ram_consumptions = [0] * len(device_list)
@@ -192,6 +210,8 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
             memory_sum += dev["resources"]["system"]["memory"]
         deployed_op_ids = []
         for i, mapping in enumerate(solution):
+            if len(mapping) == 0:
+                continue
             op_id = mapping[0]
             if op_id in deployed_op_ids:
                 continue
@@ -220,6 +240,7 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
     sum_utility = 0.0
     sum_cpu_usage = 0.0
     sum_memory_usage = 0.0
+    sum_satisfied_workflows = 0
 
     res_objective = 0
     res_time = 0
@@ -228,7 +249,7 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
         # print(f"Running iteration {i + 1} ...")
         if solver == "TOPSIS":
             decision_maker = TOPSIS_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                            transmission_matrix)
+                                            transmission_matrix, effective_time)
         # elif solver == "LocalSearch":
         #     decision_maker = LocalSearch_deploy(workflow_list, microservice_data, operator_data, device_list,
         #                                         operator_list, transmission_matrix)
@@ -239,28 +260,28 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
         #     decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
         elif solver == "LocalSearch_new":
             decision_maker = LocalSearch_new(workflow_list, microservice_data, operator_data, device_list,
-                                             operator_list, transmission_matrix)
+                                             operator_list, transmission_matrix, effective_time)
         elif solver == "Greedy_accfirst":
             decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                            transmission_matrix, "accfirst")
+                                            transmission_matrix, effective_time, "accfirst")
         elif solver == "Greedy_delayfirst":
             decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                            transmission_matrix, "delayfirst")
+                                            transmission_matrix, effective_time, "delayfirst")
         elif solver == "Greedy_multi":
             decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                            transmission_matrix, "multi")
+                                            transmission_matrix, effective_time, "multi")
         elif solver == "SA":
             decision_maker = SA_Decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                            transmission_matrix)
+                                            transmission_matrix, effective_time)
         elif solver == "ILS":
             decision_maker = Iterated_LS_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                            transmission_matrix)
+                                            transmission_matrix, effective_time)
         elif solver == "ODP-LS":
             decision_maker = ODP_LS_Decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                            transmission_matrix)
+                                            transmission_matrix, effective_time)
         elif solver == "ODP-TS":
             decision_maker = ODP_TS_Decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                            transmission_matrix)
+                                            transmission_matrix, effective_time)
         start_time = time.time()
         solution, utility = decision_maker.make_decision()
         res_objective = utility
@@ -269,11 +290,13 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
         res_time = elapsed_time
 
         cpu_usage, memory_usage = calculate_resource_consumption(solution)
+        satisfied_workflows = calculate_workflow_satisfication(workflow_list, solution)
 
         sum_elapsed_time += elapsed_time
         sum_utility += utility
         sum_cpu_usage += cpu_usage
         sum_memory_usage += memory_usage
+        sum_satisfied_workflows += satisfied_workflows
 
         if display:
             print("Solution: ")
@@ -334,6 +357,7 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
     avg_time = sum_elapsed_time / iterations
     avg_cpu_usage = sum_cpu_usage / iterations
     avg_memory_usage = sum_memory_usage / iterations
+    avg_satisfied_workflows = sum_satisfied_workflows / iterations
     if record:
         data['Normalized objective'].append(avg_nol_objective)
         data['time'].append(avg_time)
@@ -341,7 +365,7 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
         data['Memory usage'].append(avg_memory_usage)
         data['group'].append(len(workflow_list))
         data['algorithm'].append(solver)
-    return avg_nol_objective, avg_time, avg_cpu_usage, avg_memory_usage
+    return avg_nol_objective, avg_time, avg_cpu_usage, avg_memory_usage, avg_satisfied_workflows
 
 
 def main():
@@ -350,7 +374,7 @@ def main():
 
     parser = argparse.ArgumentParser(description='test script.')
 
-    parser.add_argument('-d', '--num_devices', default=30, type=int, help='number of devices')
+    parser.add_argument('-d', '--num_devices', default=20, type=int, help='number of devices')
     parser.add_argument('-r', '--num_requests', default=30, type=float, help='number of requests')
     parser.add_argument('-s', '--solver', type=str, default='All', help='solver name')
     parser.add_argument('-i', '--iterations', type=str, default=1, help='iteration times')
@@ -363,19 +387,28 @@ def main():
     iterations = args.iterations
 
     table_data = [
-        ["Algorithm", "Objective", "Time"]
+        ["Algorithm", "Objective", "Time", "CPU", "Memory", "Satisfied"]
     ]
 
     all_algorithms = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new", "ILS", "ODP-LS", "ODP-TS"]
     sum_times = []
     sum_objectives = []
+    sum_cpu = []
+    sum_memory = []
+    sum_satisfied = []
     if solver == "All":
         for _ in all_algorithms:
             sum_times.append(0.0)
             sum_objectives.append(0.0)
+            sum_cpu.append(0.0)
+            sum_memory.append(0.0)
+            sum_satisfied.append(0)
     else:
         sum_times.append(0.0)
         sum_objectives.append(0.0)
+        sum_cpu.append(0.0)
+        sum_memory.append(0.0)
+        sum_satisfied.append(0)
     for _ in range(iterations):
         device_list = generate_devices(num_devices)
         workflow_list = generate_workflows(num_requests, device_list)
@@ -384,20 +417,25 @@ def main():
         transmission_matrix = generate_transmission_rate_matrix(len(device_list))
         # delay_matrix, bandwidth_matrix, linktype_matrix = generate_network_model(len(device_list))
         access_points = generate_access_points(-20, 80, -20, 60, 0, 60, 5)
-        calculate_effective_transmission_time(device_list, access_points)
-
-
+        # effective_time = calculate_effective_transmission_time(device_list, access_points)
+        effective_time = None
         if solver == "All":
             for i in range(len(all_algorithms)):
                 algorithm = all_algorithms[i]
-                obj, time, cpu, memory = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, algorithm)
+                obj, time, cpu, memory, satisfied = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, effective_time, algorithm)
                 sum_times[i] += time
                 sum_objectives[i] += obj
+                sum_cpu[i] += cpu
+                sum_memory[i] += memory
+                sum_satisfied[i] += satisfied
         else:
-            obj, time, cpu, memory = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list,
-                                                    transmission_matrix, solver)
+            obj, time, cpu, memory, satisfied = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list,
+                                                    transmission_matrix, effective_time, solver)
             sum_times[0] += time
             sum_objectives[0] += obj
+            sum_cpu[0] += cpu
+            sum_memory[0] += memory
+            sum_satisfied[0] += satisfied
             # obj_1, time_1 = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, "Greedy_accfirst")
             # table_data.append(["Greedy_accfirst", obj_1, time_1])
             #
@@ -420,11 +458,17 @@ def main():
     print("Summary:")
     avg_times = [item/iterations for item in sum_times]
     avg_objectives = [item / iterations for item in sum_objectives]
+    avg_cpu = [item / iterations for item in sum_cpu]
+    avg_memory = [item / iterations for item in sum_memory]
+    avg_satisfied = [item / iterations for item in sum_satisfied]
     for i in range(len(avg_times)):
         time = avg_times[i]
         obj = avg_objectives[i]
         algorithm = solver if solver!="All" else all_algorithms[i]
-        table_data.append([algorithm, obj, time])
+        cpu = avg_cpu[i]
+        memory = avg_memory[i]
+        satisfied = avg_satisfied[i]
+        table_data.append([algorithm, obj, time,cpu, memory, satisfied])
     print_table(table_data)
     # make_decision_from_task_new(task_list, device_list, transmission_matrix, "TOPSIS")
     # make_decision_from_task_new(task_list, device_list, transmission_matrix, "MIP")
@@ -456,7 +500,7 @@ def evaluation_experiments():
                 transmission_matrix = generate_transmission_rate_matrix(len(device_list))
                 for i, solver in enumerate(solvers):
                     print(f"Running i={request_num} k={device_num}, solver={solver}, iteration={itr+1}/{iterations}")
-                    obj, time, cpu, memory = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, solver, display=False,
+                    obj, time, cpu, memory, satisfied = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, solver, display=False,
                                                 record=False, iterations=1)
                     sum_times[i] += time
                     sum_objectives[i] += obj

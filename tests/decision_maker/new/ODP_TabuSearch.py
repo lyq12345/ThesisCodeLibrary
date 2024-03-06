@@ -19,7 +19,7 @@ with open(os.path.join(cur_dir, "../status_tracker/power_lookup_table.json"), 'r
     power_lookup_table = json.load(file)
 
 class ODP_TS_Decider:
-    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix):
+    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time):
         self.wa = 0.05
         self.wb = 0.95
         self.workflows = workflows
@@ -42,6 +42,7 @@ class ODP_TS_Decider:
         self.operator_loads = [0 for _ in range(len(operator_data))]
 
         self.transmission_matrix = transmission_matrix
+        self.effective_time = effective_time
         self.AMax = []
         self.Amin = []
         self.calculate_max_min_acc(workflows)
@@ -136,6 +137,8 @@ class ODP_TS_Decider:
             memory_sum += dev["resources"]["system"]["memory"]
         deployed_op_ids = []
         for i, mapping in enumerate(solution):
+            if len(mapping) == 0:
+                continue
             op_id = mapping[0]
             if op_id in deployed_op_ids:
                 continue
@@ -171,6 +174,8 @@ class ODP_TS_Decider:
         ops_on_devices = [[] for _ in range(len(devices))]
         traversed_op_ids = []
         for mapping in current_solution:
+            if len(mapping) == 0:
+                continue
             op_id = mapping[0]
             op_code = mapping[1]
             dev_id = mapping[2]
@@ -184,6 +189,8 @@ class ODP_TS_Decider:
             for other_dev_id in filtered_dev_ids:
                 new_neighbor = copy.deepcopy(current_solution)
                 for ms_id, mapping in enumerate(new_neighbor):
+                    if len(mapping) == 0:
+                        continue
                     if mapping[2] == dev_id:
                         new_neighbor[ms_id][2] = other_dev_id
                 # TODO: effective remove repeatable?
@@ -194,16 +201,21 @@ class ODP_TS_Decider:
         # move an operator from u to a new v
         moved_op_ids = []
         for mapping in current_solution:
+            if len(mapping) == 0:
+                continue
             op_id = mapping[0]
             if op_id in moved_op_ids:
                 continue
             op_code = mapping[1]
             dev_id = mapping[2]
             op_load = mapping[3]
-            filtered_dev_ids = [item for item in self.filter_devices(devices, (op_id, op_code, op_load)) if item != dev_id]
+            filtered_dev_ids = [item for item in self.filter_devices(devices, (op_id, op_code, op_load)) if
+                                item != dev_id]
             for other_dev_id in filtered_dev_ids:
                 new_neighbor = copy.deepcopy(current_solution)
                 for mapping in new_neighbor:
+                    if len(mapping) == 0:
+                        continue
                     if mapping[0] == op_id:
                         mapping[2] = other_dev_id
                 # TODO: effective remove repeatable?
@@ -223,8 +235,10 @@ class ODP_TS_Decider:
             for idx in range(len(microservices)):
                 if idx == 0:
                     continue
-                pre_mapping = current_solution[ms_id-1]
+                pre_mapping = current_solution[ms_id - 1]
                 mapping = current_solution[ms_id]
+                if len(pre_mapping) == 0 or len(mapping) == 0:
+                    continue
                 if mapping[2] != pre_mapping[2]:
                     connecting_mappings.append([pre_mapping, mapping])
                 ms_id += 1
@@ -255,6 +269,8 @@ class ODP_TS_Decider:
             if self.is_system_consistent(devices[dev_id_2]["resources"]["system"], op_1_resource):
                 new_neighbor = copy.deepcopy(current_solution)
                 for mapping in new_neighbor:
+                    if len(mapping) == 0:
+                        continue
                     if mapping[0] == op_id_1:
                         mapping[2] = dev_id_2
                 if new_neighbor not in neighbors:
@@ -393,9 +409,13 @@ class ODP_TS_Decider:
             acc_min = self.Amin[wf_id]
             accuracy = 1
             delay = 0
+            unsatisfied = False
 
             for i in range(len(workflow["workflow"])):
                 mapping = solution[ms_id]
+                if len(mapping) == 0:
+                    unsatisfied = True
+                    break
                 op_code = mapping[1]
                 dev_id = mapping[2]
                 dev_name = self.devices[dev_id]["model"]
@@ -409,6 +429,8 @@ class ODP_TS_Decider:
                     previous_dev_id = solution[ms_id - 1][2]
                     delay += self.transmission_matrix[previous_dev_id][dev_id]
                 ms_id += 1
+            if unsatisfied:
+                break
             # wa = 0.05
             # wb = 0.95
             if acc_max == acc_min:
@@ -460,6 +482,8 @@ class ODP_TS_Decider:
     def consume_operators(self, devices, solution):
         deployed_op_ids = []
         for mapping in solution:
+            if len(mapping) == 0:
+                continue
             if mapping[0] in deployed_op_ids:
                 continue
             self.deploy(devices, mapping)
