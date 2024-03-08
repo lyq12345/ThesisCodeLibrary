@@ -29,9 +29,9 @@ For each workflow:
         until it's full; 
 """
 class Greedy_ODP:
-    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time, link_penalty_matrix=None):
-        self.wa = 0.05
-        self.wb = 0.95
+    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time, link_penalty_matrix=None, wa=0.05, wb=0.95):
+        self.wa = wa
+        self.wb = wb
         self.workflows = workflows
         self.microservice_data = microservice_data
         """
@@ -111,6 +111,7 @@ class Greedy_ODP:
                 D_curve = transmission_matrix[i][j] + speed_lookup_table[2][dev_model1] + speed_lookup_table[2][dev_model2]
                 penalty = self.wb*((D_curve - D_min) / (D_max - D_min))
                 self.link_penalty_matrix[i][j] = penalty
+
     def is_system_consistent(self, system_resources, system_requirements):
         for key, value in system_requirements.items():
             if key not in system_resources:
@@ -166,8 +167,8 @@ class Greedy_ODP:
                 ms_id += 1
             if unsatisfied:
                 continue
-            wa = 0.05
-            wb = 0.95
+            wa = self.wa
+            wb = self.wb
             if acc_max == acc_min:
                 A = accuracy
             else:
@@ -248,6 +249,7 @@ class Greedy_ODP:
 
         devices[dev_id]["resources"]["system"]["cpu"] -= extra_cpu
         self.operator_loads[op_id] += rate
+
     def find_best_mapping_acc(self, mapping_candidates, previous_mapping):
         # accuracy first
         best_accuracy = 0
@@ -411,7 +413,7 @@ class Greedy_ODP:
     def find_device_with_lowest_penalty(self, filtered_dev_ids, L):
         # find two devices
         res_dev_ids = []
-        number = len(L)
+        number = int(len(L)/2)
         for dev_id in L:
             if dev_id in filtered_dev_ids:
                 res_dev_ids.append(dev_id)

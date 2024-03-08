@@ -19,7 +19,7 @@ with open(os.path.join(cur_dir, "../status_tracker/power_lookup_table.json"), 'r
     power_lookup_table = json.load(file)
 
 class LocalSearch_new:
-    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time):
+    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time, wa=0.05, wb=0.95):
         self.workflows = workflows
         self.microservice_data = microservice_data
         """
@@ -44,6 +44,9 @@ class LocalSearch_new:
         self.AMax = []
         self.Amin = []
         self.calculate_max_min_acc(workflows)
+
+        self.wa = wa
+        self.wb = wb
 
     def get_peer_operators(self, service_code, dev_name, op_load):
         candidate_op_codes = []
@@ -138,7 +141,7 @@ class LocalSearch_new:
         #     self.deploy(devices_copy, (selected_op_id, selected_device_id))
         #     self.solution[task_id] = (selected_op_id, selected_device_id)
 
-        greedy_decider = Greedy_decider(self.workflows, self.microservice_data, self.operator_data, self.devices, self.operator_profiles, self.transmission_matrix, "multi" )
+        greedy_decider = Greedy_decider(self.workflows, self.microservice_data, self.operator_data, self.devices, self.operator_profiles, self.transmission_matrix, self.effective_time, "multi", wa=self.wa, wb=self.wb )
         init_solution, init_utility = greedy_decider.make_decision(display=False)
         # self.calculate_resource_consumption(init_solution)
         return init_solution
@@ -442,14 +445,12 @@ class LocalSearch_new:
 
             if unsatisfied:
                 continue
-            wa = 0.05
-            wb = 0.95
             if acc_max == acc_min:
                 A = accuracy
             else:
                 A = (accuracy-acc_min)/(acc_max-acc_min)
             B = (delay_tol - delay) / delay_tol
-            utility = wa*A + wb*B
+            utility = self.wa*A + self.wb*B
             sum_uti += utility
         return sum_uti
 

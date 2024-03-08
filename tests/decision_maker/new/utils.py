@@ -177,12 +177,11 @@ def calculate_effective_transmission_time(devices, access_points):
             effective_time = calculate_effective_rate(determine_sequence, continous_threshold, timeunit)
             effective_rate = effective_time / epoch
             # print(effective_rate)
-            if effective_rate >= effective_threshold:
-                effective_time_matrix[i][j] = effective_time
-                effective_time_matrix[j][i] = effective_time
-            else:
-                effective_time_matrix[i][j] = 0
-                effective_time_matrix[j][i] = 0
+            effective_time_matrix[i][j] = effective_time
+            effective_time_matrix[j][i] = effective_time
+            # else:
+            #     effective_time_matrix[i][j] = 0
+            #     effective_time_matrix[j][i] = 0
     return effective_time_matrix
 
 # grouped_data = parse_waypoint_file()

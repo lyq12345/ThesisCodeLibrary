@@ -29,7 +29,7 @@ For each workflow:
         until it's full; 
 """
 class Greedy_decider:
-    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time, policy="accfirst"):
+    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time, policy="accfirst", wa=0.05, wb=0.95):
         self.workflows = workflows
         self.policy = policy
         self.microservice_data = microservice_data
@@ -51,6 +51,9 @@ class Greedy_decider:
         self.AMax = []
         self.Amin = []
         self.calculate_max_min_acc(workflows)
+
+        self.wa = wa
+        self.wb = wb
 
     def calculate_max_min_acc(self, workflows):
 
@@ -129,14 +132,13 @@ class Greedy_decider:
                 ms_id += 1
             if unsatisfied:
                 continue
-            wa = 0.05
-            wb = 0.95
+
             if acc_max == acc_min:
                 A = accuracy
             else:
                 A = (accuracy - acc_min) / (acc_max - acc_min)
             B = (delay_tol - delay) / delay_tol
-            utility = wa * A + wb * B
+            utility = self.wa * A + self.wb * B
             # utility = ((0.3*accuracy - 0.7*max(0, (delay - delay_tol)/delay))+1)/2
             sum_uti += utility
         return sum_uti
@@ -158,6 +160,50 @@ class Greedy_decider:
             # utility = ((0.3*accuracy - 0.7*max(0, (delay - delay_tol)/delay))+1)/2
             satisfied_num += 1
         return satisfied_num
+
+    def calculate_total_accuracy(self, solution):
+        sum_accuracy = 0
+        for mapping in solution:
+            if len(mapping) == 0:
+                continue
+            op_code = mapping[1]
+            acc = self.operator_profiles[op_code]["accuracy"]
+            sum_accuracy += acc
+        return sum_accuracy
+
+    def calculate_total_delay(self, solution):
+        sum_delay = 0.0
+        ms_id = 0
+        for wf_id, workflow in enumerate(self.workflows):
+            source_device_id = workflow["source"]
+            delay_tol = workflow["delay"]
+            accuracy = 1
+            delay = 0
+            unsatisfied = False
+            acc_max = self.AMax[wf_id]
+            acc_min = self.Amin[wf_id]
+
+            for i in range(len(workflow["workflow"])):
+                mapping = solution[ms_id]
+                if len(mapping) == 0:
+                    unsatisfied = True
+                    break
+                op_code = mapping[1]
+                dev_id = mapping[2]
+                dev_name = self.devices[dev_id]["model"]
+                operator_delay = speed_lookup_table[op_code][dev_name]
+                delay += operator_delay
+                if i == 0:  # the first microservice
+                    delay += self.transmission_matrix[source_device_id][dev_id]
+                else:
+                    previous_dev_id = solution[ms_id - 1][2]
+                    delay += self.transmission_matrix[previous_dev_id][dev_id]
+                ms_id += 1
+            if unsatisfied:
+                continue
+            sum_delay += delay
+        return sum_delay
+
 
     def calculate_delay(self, operator_id, source_device_id, device_id):
         device_model = self.devices[device_id]["model"]
@@ -254,9 +300,15 @@ class Greedy_decider:
             delay += speed_lookup_table[op_code][dev_name] # operator latency
             if previous_mapping[0] == -1:
                 source_dev_id = previous_mapping[2]
+                if self.effective_time is not None:
+                    if self.effective_time[source_dev_id][dev_id] == 0:
+                        continue
                 delay += self.transmission_matrix[source_dev_id][dev_id]
             else:
                 previous_dev_id = previous_mapping[2]
+                if self.effective_time is not None:
+                    if self.effective_time[previous_dev_id][dev_id] == 0:
+                        continue
                 delay += self.transmission_matrix[previous_dev_id][dev_id]
             if delay < lowest_delay:
                 best_mapping = mapping
@@ -277,9 +329,15 @@ class Greedy_decider:
             delay += speed_lookup_table[op_code][dev_name]  # operator latency
             if previous_mapping[0] == -1:
                 source_dev_id = previous_mapping[2]
+                if self.effective_time is not None:
+                    if self.effective_time[source_dev_id][dev_id] == 0:
+                        continue
                 delay += self.transmission_matrix[source_dev_id][dev_id]
             else:
                 previous_dev_id = previous_mapping[2]
+                if self.effective_time is not None:
+                    if self.effective_time[previous_dev_id][dev_id] == 0:
+                        continue
                 delay += self.transmission_matrix[previous_dev_id][dev_id]
             if delay < lowest_delay:
                 lowest_delay = delay
@@ -291,9 +349,15 @@ class Greedy_decider:
             delay += speed_lookup_table[op_code][dev_name]  # operator latency
             if previous_mapping[0] == -1:
                 source_dev_id = previous_mapping[2]
+                if self.effective_time is not None:
+                    if self.effective_time[source_dev_id][dev_id] == 0:
+                        continue
                 delay += self.transmission_matrix[source_dev_id][dev_id]
             else:
                 previous_dev_id = previous_mapping[2]
+                if self.effective_time is not None:
+                    if self.effective_time[previous_dev_id][dev_id] == 0:
+                        continue
                 delay += self.transmission_matrix[previous_dev_id][dev_id]
             if delay == lowest_delay:
                 low_acc_candidates.append(mapping)
@@ -320,9 +384,15 @@ class Greedy_decider:
             delay += speed_lookup_table[op_code][dev_name]  # operator latency
             if previous_mapping[0] == -1:
                 source_dev_id = previous_mapping[2]
+                if self.effective_time is not None:
+                    if self.effective_time[source_dev_id][dev_id] == 0:
+                        continue
                 delay += self.transmission_matrix[source_dev_id][dev_id]
             else:
                 previous_dev_id = previous_mapping[2]
+                if self.effective_time is not None:
+                    if self.effective_time[previous_dev_id][dev_id] == 0:
+                        continue
                 delay += self.transmission_matrix[previous_dev_id][dev_id]
             criteria_list = [accuracy, delay]
             decision_matrix.append(criteria_list)
@@ -471,6 +541,7 @@ class Greedy_decider:
         # self.calculate_resource_consumption(solution)
 
         utility = self.calculate_utility(solution)
+
         return solution, utility
 
 

@@ -19,9 +19,9 @@ with open(os.path.join(cur_dir, "../status_tracker/power_lookup_table.json"), 'r
     power_lookup_table = json.load(file)
 
 class ODP_LS_Decider:
-    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time):
-        self.wa = 0.05
-        self.wb = 0.95
+    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time, wa=0.05, wb=0.95):
+        self.wa = wa
+        self.wb = wb
         self.workflows = workflows
         self.microservice_data = microservice_data
         """
@@ -164,7 +164,7 @@ class ODP_LS_Decider:
 
 
     def initial_solution(self):
-        greedy_decider = Greedy_ODP(self.workflows, self.microservice_data, self.operator_data, self.devices, self.operator_profiles, self.transmission_matrix, self.link_penalty_matrix)
+        greedy_decider = Greedy_ODP(self.workflows, self.microservice_data, self.operator_data, self.devices, self.operator_profiles, self.transmission_matrix, self.link_penalty_matrix, wa=self.wa, wb=self.wb)
         init_solution, init_utility = greedy_decider.make_decision(display=False)
         # self.calculate_resource_consumption(init_solution)
         return init_solution

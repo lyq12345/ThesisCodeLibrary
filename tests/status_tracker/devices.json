@@ -1,32 +1,74 @@
 [
   {
+    "id": 0,
+    "hostname": "edge1",
+    "model": "jetson-xavier",
+    "ip": "128.200.218.112",
+    "arch": "arm64",
+    "os": "Ubuntu1804",
+    "resources": {
+      "system": {
+         "cpu": 800,
+        "gpu": 1,
+        "memory": 32768,
+        "storage": 65600
+      },
+      "hardware": []
+    },
+    "power": "inf",
+    "location": [],
+    "type": "edge-server"
+  },
+  {
     "id": 1,
-    "hostname": "node1",
+    "hostname": "edge2",
+    "model": "jetson-nano",
+    "ip": "128.195.53.178",
+    "arch": "arm64",
+    "os": "ubuntu1804",
+    "resources": {
+      "system": {
+         "cpu": 400,
+        "gpu": 1,
+        "memory": 4096,
+        "storage": 65600
+      },
+      "hardware": []
+    },
+    "power": "inf",
+    "location": [],
+    "type": "edge-server"
+  },
+  {
+    "id": 2,
+    "hostname": "edge3",
     "model": "raspberrypi-4b",
-    "ip": "172.22.152.175",
+    "ip": "172.31.183.184",
     "arch": "arm64",
     "os": "Raspbian GNU/Linux 10 (buster)",
     "resources": {
       "system": {
-         "cpu": 4,
+         "cpu": 400,
         "gpu": 0,
         "memory": 4096,
         "storage": 131072
       },
-      "hardware": null
+      "hardware": []
     },
-    "power": "unlimited"
+    "power": "inf",
+    "location": [],
+    "type": "edge-server"
   },
   {
-    "id": 2,
-    "hostname": "node2",
+    "id": 3,
+    "hostname": "iot1",
     "model": "raspberrypi-4b",
-    "ip": "172.22.152.175",
+    "ip": "172.31.245.17",
     "arch": "arm64",
     "os": "Raspbian GNU/Linux 10 (buster)",
     "resources": {
       "system": {
-        "cpu": 4,
+         "cpu": 400,
         "gpu": 0,
         "memory": 4096,
         "storage": 131072
@@ -34,188 +76,41 @@
       "hardware": [
         {
           "id": 1,
-          "sensor": "IMX519"
+          "sensor": "IMX519",
+            "rate": 0.02,
+            "size": 1200
         }
       ]
-
     },
-    "power": "unlimited"
-  },
-  {
-    "id": 3,
-    "hostname": "node3",
-    "model": "jetson-xavier",
-    "ip": "172.22.152.175",
-    "arch": "arm64",
-    "os": "ubuntu 18.04",
-    "resources": {
-      "system": {
-        "cpu": 4,
-        "gpu": 1,
-        "memory": 32768,
-        "storage": 65600
-      },
-      "hardware": null
-
-    },
-    "power": "unlimited"
+    "power": "inf",
+    "location": [],
+    "type": "IoT-insitu"
   },
   {
     "id": 4,
-    "hostname": "node4",
-    "model": "raspberrypi-4b",
-    "ip": "172.22.152.175",
+    "hostname": "iot2",
+    "model": "jetson-xavier",
+    "ip": "172.31.183.180",
     "arch": "arm64",
     "os": "Raspbian GNU/Linux 10 (buster)",
     "resources": {
       "system": {
-        "cpu": 4,
+        "cpu": 400,
         "gpu": 0,
         "memory": 4096,
         "storage": 131072
       },
       "hardware": [
         {
-          "id": 2,
-          "sensor": "IMX519"
+          "id": 1,
+          "sensor": "IMX519",
+            "rate": 0.1,
+            "size": 1200
         }
       ]
-
     },
-    "power": "1820"
-  },
-  {
-    "id": 5,
-    "hostname": "node5",
-    "model": "jetson-nano",
-    "ip": "172.22.152.175",
-    "arch": "arm64",
-    "os": "ubuntu 18.04",
-    "resources": {
-      "system": {
-        "cpu": 4,
-        "gpu": 1,
-        "memory": 4096,
-        "storage": 65600
-      },
-      "hardware": null
-
-    },
-    "power": "unlimited"
-  },
-  {
-    "id": 6,
-    "hostname": "master",
-    "model": "raspberrypi-4b",
-    "ip": "172.22.152.175",
-    "arch": "arm64",
-    "os": "Raspbian GNU/Linux 10 (buster)",
-    "resources": {
-      "system": {
-        "cpu": 4,
-        "gpu": 0,
-        "memory": 4096,
-        "storage": 131072
-      },
-      "hardware": null
-
-    },
-    "power": "unlimited"
-  },
-  {
-    "id": 7,
-    "hostname": "mock1",
-    "model": "raspberrypi-4b",
-    "ip": "172.22.152.175",
-    "arch": "arm64",
-    "os": "Raspbian GNU/Linux 10 (buster)",
-    "resources": {
-      "system": {
-        "cpu": 4,
-        "gpu": 0,
-        "memory": 4096,
-        "storage": 131072
-      },
-      "hardware": [
-        {
-          "id": 3,
-          "sensor": "IMX519"
-        }
-      ]
-
-    },
-    "power": "unlimited"
-  },
-  {
-    "id": 8,
-    "hostname": "mock1",
-    "model": "raspberrypi-4b",
-    "ip": "172.22.152.175",
-    "arch": "arm64",
-    "os": "Raspbian GNU/Linux 10 (buster)",
-    "resources": {
-      "system": {
-        "cpu": 4,
-        "gpu": 0,
-        "memory": 4096,
-        "storage": 131072
-      },
-      "hardware": [
-        {
-          "id": 4,
-          "sensor": "IMX519"
-        }
-      ]
-
-    },
-    "power": "unlimited"
-  },
-  {
-    "id": 9,
-    "hostname": "mock2",
-    "model": "raspberrypi-4b",
-    "ip": "172.22.152.175",
-    "arch": "arm64",
-    "os": "Raspbian GNU/Linux 10 (buster)",
-    "resources": {
-      "system": {
-        "cpu": 4,
-        "gpu": 0,
-        "memory": 4096,
-        "storage": 131072
-      },
-      "hardware": [
-        {
-          "id": 5,
-          "sensor": "IMX519"
-        }
-      ]
-
-    },
-    "power": "unlimited"
-  },
-  {
-    "id": 10,
-    "hostname": "mock3",
-    "model": "raspberrypi-4b",
-    "ip": "172.22.152.175",
-    "arch": "arm64",
-    "os": "Raspbian GNU/Linux 10 (buster)",
-    "resources": {
-      "system": {
-        "cpu": 4,
-        "gpu": 0,
-        "memory": 4096,
-        "storage": 131072
-      },
-      "hardware": [
-        {
-          "id": 6,
-          "sensor": "IMX519"
-        }
-      ]
-
-    },
-    "power": "unlimited"
+    "power": "1820",
+    "location": [],
+    "type": "iot-mobile"
   }
 ]

@@ -1,0 +1,85 @@
+[
+  {
+    "id": 0,
+    "name": "joelee0515/firedetection:tinyyolov3-measure-time",
+    "type": "processing",
+    "object": "fire",
+    "object_code": 2,
+    "version": "tinyyolov3",
+    "accuracy": 0.321,
+    "speed": 2,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 104,
+        "gpu": 0,
+        "storage": 0,
+        "memory": 408
+      },
+      "hardware": null
+
+    }
+  },
+  {
+    "id": 1,
+    "name": "joelee0515/firedetection:yolov3-measure-time",
+    "type": "processing",
+    "object": "fire",
+    "object_code": 2,
+    "version": "yolov3",
+    "accuracy": 0.519,
+    "speed": 1,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 304,
+        "gpu": 0,
+        "storage": 0,
+        "memory": 874
+      },
+      "hardware": null
+
+    }
+  },
+  {
+    "id": 2,
+    "name": "joelee0515/humandetection:tinyyolov3-measure-time",
+    "type": "processing",
+    "object": "human",
+    "object_code": 1,
+    "version": "tinyyolov3",
+    "accuracy": 0.343,
+    "speed": 2,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 104,
+        "gpu": 0,
+        "storage": 0,
+        "memory": 408
+      },
+      "hardware": null
+
+    }
+  },
+  {
+    "id": 3,
+    "name": "joelee0515/humandetection:yolov3-new2",
+    "type": "processing",
+    "object": "human",
+    "object_code": 1,
+    "version": "yolov3",
+    "accuracy": 0.568,
+    "speed": 1,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 304,
+        "gpu": 0,
+        "storage": 0,
+        "memory": 874
+      },
+      "hardware": null
+    }
+  }
+]

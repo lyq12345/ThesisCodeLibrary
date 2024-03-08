@@ -6,13 +6,6 @@ object_dict = {
 }
 
 workflow_templates = [
-    [4, 1, 7],
-    [4, 1, 8],
-    [5, 2, 6],
-    [3, 9]
-]
-
-workflow_templates2 = [
     [1],
     [2]
 ]
@@ -27,7 +20,7 @@ def random_weights(n):
     weights = [w / total for w in weights]
 
     return weights
-def generate_workflows(num_workflows, device_list):
+def generate_workflows_2(num_workflows, device_list):
     sensor_list = []
     for dev in device_list:
         if len(dev["resources"]["hardware"]) > 0:
