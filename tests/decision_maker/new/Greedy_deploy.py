@@ -12,6 +12,10 @@ cur_dir = os.getcwd()
 
 speed_lookup_table = None
 power_lookup_table = None
+
+def sigmoid(x, threshold, scale=1):
+    return 1 / (1 + np.exp(-(x - threshold) * scale))
+
 with open(os.path.join(cur_dir, "../status_tracker/speed_lookup_table.json"), 'r') as file:
     speed_lookup_table = json.load(file)
 
@@ -29,7 +33,7 @@ For each workflow:
         until it's full; 
 """
 class Greedy_decider:
-    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time, policy="accfirst", wa=0.05, wb=0.95):
+    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time, policy="accfirst", wa=0.01, wb=0.99, objective="normal"):
         self.workflows = workflows
         self.policy = policy
         self.microservice_data = microservice_data
@@ -52,6 +56,7 @@ class Greedy_decider:
         self.Amin = []
         self.calculate_max_min_acc(workflows)
 
+        self.objective = objective
         self.wa = wa
         self.wb = wb
 
@@ -137,7 +142,10 @@ class Greedy_decider:
                 A = accuracy
             else:
                 A = (accuracy - acc_min) / (acc_max - acc_min)
-            B = (delay_tol - delay) / delay_tol
+            if self.objective == "sigmoid":
+                B = sigmoid(delay, delay_tol)
+            else:
+                B = (delay_tol - delay) / delay_tol
             utility = self.wa * A + self.wb * B
             # utility = ((0.3*accuracy - 0.7*max(0, (delay - delay_tol)/delay))+1)/2
             sum_uti += utility

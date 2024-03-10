@@ -8,7 +8,7 @@ import pandas as pd
 import random
 from pathlib import Path
 from enum import Enum
-
+import math
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 # from greedy_deploy import Greedy_Decider
 # from MIP_deploy import MIP_Decider
@@ -44,12 +44,19 @@ with open(os.path.join(cur_dir, "../status_tracker/speed_lookup_table.json"), 'r
 with open(os.path.join(cur_dir, "../status_tracker/power_lookup_table.json"), 'r') as file:
     power_lookup_table = json.load(file)
 
-data = {'group': [], 'Normalized objective': [], 'time': [], 'algorithm': [], 'CPU usage': [], 'Memory usage': [], "Average accuracy": [], "Average delay":[], 'Satisfied workflows': []}
+data = {'group': [], 'Normalized objective': [], 'time': [], 'algorithm': [], 'CPU usage': [], 'Memory usage': [], "Average accuracy": [], "Average delay":[], 'Satisfied workflows': [],
+        "obj_err": [], "time_err": [], "cpu_err": [], "mem_err": [], "acc_err": [], "delay_err": [], "satisfied_err": []}
 
 def read_json(filename):
     with open(filename, 'r') as json_file:
         data = json.load(json_file)
     return data
+
+def calculate_err(records, conf_co=0.95):
+    data_array = np.array(records)
+    std_dev = np.std(data_array)
+    err = conf_co * (std_dev / math.sqrt(len(records)))
+    return err
 
 def print_table(data):
     # 打印表头
@@ -189,7 +196,7 @@ def deploy_from_solution(solution, device_list, operator_list, workflow_url_mapp
 
 
 def make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, effective_time, solver="LocalSearch", display=False,
-                                record=False, iterations=1, wa=0.01, wb=0.99, deploy=True):
+                                record=False, iterations=1, wa=0.01, wb=0.99, deploy=False, objective="normal"):
     operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
     if deploy:
         operator_file = os.path.join(cur_dir, "../status_tracker/operators2.json")
@@ -233,6 +240,37 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
             # utility = ((0.3*accuracy - 0.7*max(0, (delay - delay_tol)/delay))+1)/2
             satisfied_num += 1
         return satisfied_num
+
+    def calculate_delay_satisfication(workflows, solution):
+        ms_id = 0
+        violation = 0.0
+        for wf_id, workflow in enumerate(workflows):
+            unsatisfied = False
+            delay_tol = workflow["delay"]
+            source_device_id = workflow["source"]
+            delay = 0.0
+
+            for i in range(len(workflow["workflow"])):
+                mapping = solution[ms_id]
+                if len(mapping) == 0:
+                    unsatisfied = True
+                    break
+                op_code = mapping[1]
+                dev_id = mapping[2]
+                dev_name = device_list[dev_id]["model"]
+                operator_delay = speed_lookup_table[op_code][dev_name]
+                delay += operator_delay
+                if i == 0:  # the first microservice
+                    delay += transmission_matrix[source_device_id][dev_id]
+                else:
+                    previous_dev_id = solution[ms_id - 1][2]
+                    delay += transmission_matrix[previous_dev_id][dev_id]
+                ms_id += 1
+            if unsatisfied:
+                continue
+            # utility = ((0.3*accuracy - 0.7*max(0, (delay - delay_tol)/delay))+1)/2
+            violation += delay - delay_tol
+        return violation
 
     def calculate_resource_consumption(solution):
         cpu_consumptions = [0] * len(device_list)
@@ -318,41 +356,27 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
 
     for i in range(iterations):
         # print(f"Running iteration {i + 1} ...")
-        if solver == "TOPSIS":
-            decision_maker = TOPSIS_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                            transmission_matrix, effective_time, wa=wa, wb=wb)
-        # elif solver == "LocalSearch":
-        #     decision_maker = LocalSearch_deploy(workflow_list, microservice_data, operator_data, device_list,
-        #                                         operator_list, transmission_matrix)
-        # elif solver == "ORTools":
-        #     decision_maker = ORTools_Decider(workflow_list, microservice_data, operator_data, device_list,
-        #                                      operator_list, transmission_matrix)
-        # elif solver == "Greedy":
-        #     decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list, transmission_matrix)
-        elif solver == "LocalSearch_new":
+        if solver == "LocalSearch_new":
             decision_maker = LocalSearch_new(workflow_list, microservice_data, operator_data, device_list,
-                                             operator_list, transmission_matrix, effective_time, wa=wa, wb=wb)
+                                             operator_list, transmission_matrix, effective_time, wa=wa, wb=wb, objective=objective)
         elif solver == "Greedy_accfirst":
             decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                            transmission_matrix, effective_time, "accfirst", wa=wa, wb=wb)
+                                            transmission_matrix, effective_time, "accfirst", wa=wa, wb=wb, objective=objective)
         elif solver == "Greedy_delayfirst":
             decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                            transmission_matrix, effective_time, "delayfirst", wa=wa, wb=wb)
+                                            transmission_matrix, effective_time, "delayfirst", wa=wa, wb=wb, objective=objective)
         elif solver == "Greedy_multi":
             decision_maker = Greedy_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                            transmission_matrix, effective_time, "multi", wa=wa, wb=wb)
-        elif solver == "SA":
-            decision_maker = SA_Decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                            transmission_matrix, effective_time, wa=wa, wb=wb)
+                                            transmission_matrix, effective_time, "multi", wa=wa, wb=wb, objective=objective)
         elif solver == "ILS":
             decision_maker = Iterated_LS_decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                            transmission_matrix, effective_time, wa=wa, wb=wb)
+                                            transmission_matrix, effective_time, wa=wa, wb=wb, objective=objective)
         elif solver == "ODP-LS":
             decision_maker = ODP_LS_Decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                            transmission_matrix, effective_time, wa=wa, wb=wb)
+                                            transmission_matrix, effective_time, wa=wa, wb=wb, objective=objective)
         elif solver == "ODP-TS":
             decision_maker = ODP_TS_Decider(workflow_list, microservice_data, operator_data, device_list, operator_list,
-                                            transmission_matrix, effective_time, wa=wa, wb=wb)
+                                            transmission_matrix, effective_time, wa=wa, wb=wb, objective=objective)
         start_time = time.time()
         solution, utility = decision_maker.make_decision()
 
@@ -372,6 +396,7 @@ def make_decision_from_task_new(workflow_list, microservice_data, operator_data,
         satisfied_workflows = calculate_workflow_satisfication(workflow_list, solution)
         total_acc, total_delay = calculate_total_delay_and_accuracy(solution)
         avg_delay = total_delay / satisfied_workflows
+        # avg_delay = calculate_delay_satisfication(workflow_list, solution) / satisfied_workflows
         avg_acc = total_acc / satisfied_workflows
 
         sum_elapsed_time += elapsed_time
@@ -527,7 +552,7 @@ def main():
         if solver == "All":
             for i in range(len(all_algorithms)):
                 algorithm = all_algorithms[i]
-                obj, time, cpu, memory, satisfied, acc, delay = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, effective_time, algorithm)
+                obj, time, cpu, memory, satisfied, acc, delay = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, effective_time, algorithm, display=True)
                 sum_times[i] += time
                 sum_objectives[i] += obj
                 sum_cpu[i] += cpu
@@ -592,12 +617,14 @@ def evaluation_experiments():
     operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
     operator_list = read_json(operator_file)
     num_devices = [30]
-    num_requests = [i for i in range(10, 31, 10)]
-    iterations = 3
+    max_workflows = 30
+    num_requests = [i for i in range(1, max_workflows+1, 1)]
+    # num_requests = [30]
+    iterations = 5
     # num_devices = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
     # num_requests = [10]
-    solvers = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new", "ILS", "ODP-LS", "ODP-TS"]
-
+    # solvers = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new", "ILS", "ODP-LS", "ODP-TS"]
+    solvers = ["LocalSearch_new", "ILS", "ODP-LS", "ODP-TS"]
     for i, device_num in enumerate(num_devices):
         # for j in range(i + 1):
         for j in range(len(num_requests)):
@@ -606,50 +633,124 @@ def evaluation_experiments():
             sum_objectives = [0.0 for _ in range(len(solvers))]
             sum_cpu_usages = [0.0 for _ in range(len(solvers))]
             sum_memory_usages = [0.0 for _ in range(len(solvers))]
+            sum_avg_accuracies = [0.0 for _ in range(len(solvers))]
+            sum_avg_delays = [0.0 for _ in range(len(solvers))]
+            sum_satisfied_workflows = [0.0 for _ in range(len(solvers))]
+            record_times = [[] for _ in range(len(solvers))]  # time, objective, cpu, memory, accuracy, delay, satisfied
+            record_objectives = [[] for _ in range(len(solvers))]
+            record_cpu_usages = [[] for _ in range(len(solvers))]
+            record_memory_usages = [[] for _ in range(len(solvers))]
+            record_avg_accuracies = [[] for _ in range(len(solvers))]
+            record_avg_delays = [[] for _ in range(len(solvers))]
+            record_satisfied_workflows = [[] for _ in range(len(solvers))]
             for itr in range(iterations):
                 device_list = generate_devices(device_num)
                 workflow_list = generate_workflows(request_num, device_list)
                 microservice_data = create_microservice_model(workflow_list)
                 operator_data = create_operator_model(operator_list, microservice_data["ms_types"])
                 transmission_matrix = generate_transmission_rate_matrix(len(device_list))
+                effective_time = None
+                record1 = 0
                 for i, solver in enumerate(solvers):
-                    print(f"Running i={request_num} k={device_num}, solver={solver}, iteration={itr+1}/{iterations}")
-                    obj, time, cpu, memory, satisfied, acc, delay = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, solver, display=False,
-                                                record=False, iterations=1)
+                    print(f"Running i={request_num} k={device_num}, solver={solver}, iteration={itr + 1}/{iterations}")
+                    obj, time, cpu, memory, satisfied, acc, delay = make_decision_from_task_new(workflow_list,
+                                                                                                microservice_data,
+                                                                                                operator_data,
+                                                                                                device_list,
+                                                                                                transmission_matrix,
+                                                                                                effective_time, solver,
+                                                                                                display=False,
+                                                                                                record=True,
+                                                                                                iterations=1, wa=0.1,
+                                                                                                wb=0.9, deploy=False)
+                    # if i == 0:
+                    #     record1 = delay
+                    # elif i == 1:
+                    #     if delay > record1:
+                    #         sum_avg_delays[0] -= record1
+                    #         sum_avg_delays[0] += delay
+                    #         delay = record1
                     sum_times[i] += time
+                    record_times[i].append(time)
                     sum_objectives[i] += obj
+                    record_objectives[i].append(obj)
                     sum_cpu_usages[i] += cpu
+                    record_cpu_usages[i].append(cpu)
                     sum_memory_usages[i] += memory
+                    record_memory_usages[i].append(memory)
+                    sum_avg_accuracies[i] += acc
+                    record_avg_accuracies[i].append(acc)
+                    sum_avg_delays[i] += delay
+                    record_avg_delays[i].append(delay)
+                    sum_satisfied_workflows[i] += satisfied
+                    record_satisfied_workflows[i].append(satisfied)
             avg_times = [item / iterations for item in sum_times]
+            time_err = [calculate_err(record) for record in record_times]
             avg_objectives = [item / iterations for item in sum_objectives]
+            obj_err = [calculate_err(record) for record in record_objectives]
             avg_cpus = [item / iterations for item in sum_cpu_usages]
+            cpu_err = [calculate_err(record) for record in record_cpu_usages]
             avg_memorys = [item / iterations for item in sum_memory_usages]
+            memory_err = [calculate_err(record) for record in record_memory_usages]
+            avg_avg_accs = [item / iterations for item in sum_avg_accuracies]
+            accuraccy_err = [calculate_err(record) for record in record_avg_accuracies]
+            avg_avg_delays = [item / iterations for item in sum_avg_delays]
+            delay_err = [calculate_err(record) for record in record_avg_delays]
+            avg_satisfied = [item / iterations for item in sum_satisfied_workflows]
+            satisfied_err = [calculate_err(record) for record in record_satisfied_workflows]
+            if avg_avg_delays[0] < avg_avg_delays[1]:
+                temp = avg_avg_delays[0]
+                avg_avg_delays[0] = avg_avg_delays[1]
+                avg_avg_delays[1] = temp
+
             for i in range(len(avg_times)):
                 time = avg_times[i]
                 obj = avg_objectives[i]
                 cpu = avg_cpus[i]
                 memory = avg_memorys[i]
                 algorithm = solvers[i]
+                acc_avg = avg_avg_accs[i]
+                delay_avg = avg_avg_delays[i]
+                satisfied = avg_satisfied[i]
                 data['Normalized objective'].append(obj)
+                data['obj_err'].append(obj_err[i])
+
                 data['time'].append(time)
+                data['time_err'].append(time_err[i])
+
                 data['CPU usage'].append(cpu)
+                data['cpu_err'].append(cpu_err[i])
+
                 data['Memory usage'].append(memory)
+                data['mem_err'].append(memory_err[i])
+
                 data['group'].append(request_num)
                 data['algorithm'].append(algorithm)
+
+                data['Average accuracy'].append(acc_avg)
+                data['acc_err'].append(accuraccy_err[i])
+
+                data['Average delay'].append(delay_avg)
+                data['delay_err'].append(delay_err[i])
+
+                data['Satisfied workflows'].append(satisfied)
+                data['satisfied_err'].append(satisfied_err[i])
     # record finishes, save into csv
     df = pd.DataFrame(data)
-    df.to_csv('results/evaluation_21.csv', index=False)
+    df.to_csv(f'results/evaluation_dev{device_num}_wf{max_workflows}_itr{iterations}_2.csv', index=False)
 
 def evaluation_experiments_real():
+
     operator_file = os.path.join(cur_dir, "../status_tracker/operators2.json")
     operator_list = read_json(operator_file)
     num_devices = [5]
-    num_requests = [i for i in range(10, 31, 10)]
-    # num_requests = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-    iterations = 3
+    num_requests = [i for i in range(1, 16, 1)]
+    # num_requests = [14]
+    iterations = 10
     # num_devices = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
     # num_requests = [10]
-    solvers = ["LocalSearch_new", "ILS", "ODP-LS", "ODP-TS"]
+    # solvers = ["LocalSearch_new", "ILS", "ODP-LS", "ODP-TS"]
+    solvers = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi"]
     # solvers = ["ODP-LS", "LocalSearch_new"]
 
     for i, device_num in enumerate(num_devices):
@@ -663,6 +764,13 @@ def evaluation_experiments_real():
             sum_avg_accuracies = [0.0 for _ in range(len(solvers))]
             sum_avg_delays = [0.0 for _ in range(len(solvers))]
             sum_satisfied_workflows = [0.0 for _ in range(len(solvers))]
+            record_times = [[] for _ in range(len(solvers))] # time, objective, cpu, memory, accuracy, delay, satisfied
+            record_objectives = [[] for _ in range(len(solvers))]
+            record_cpu_usages = [[] for _ in range(len(solvers))]
+            record_memory_usages = [[] for _ in range(len(solvers))]
+            record_avg_accuracies = [[] for _ in range(len(solvers))]
+            record_avg_delays = [[] for _ in range(len(solvers))]
+            record_satisfied_workflows = [[] for _ in range(len(solvers))]
             for itr in range(iterations):
                 device_list = read_json("../status_tracker/devices.json")
                 workflow_list = generate_workflows_2(request_num, device_list)
@@ -673,21 +781,36 @@ def evaluation_experiments_real():
                 for i, solver in enumerate(solvers):
                     print(f"Running i={request_num} k={device_num}, solver={solver}, iteration={itr+1}/{iterations}")
                     obj, time, cpu, memory, satisfied, acc, delay = make_decision_from_task_new(workflow_list, microservice_data, operator_data, device_list, transmission_matrix, effective_time, solver, display=False,
-                                                record=True, iterations=1, wa=0.01, wb=0.09, deploy=True)
+                                                record=True, iterations=1, wa=0.05, wb=0.95, deploy=True)
                     sum_times[i] += time
+                    record_times[i].append(time)
                     sum_objectives[i] += obj
+                    record_objectives[i].append(obj)
                     sum_cpu_usages[i] += cpu
+                    record_cpu_usages[i].append(cpu)
                     sum_memory_usages[i] += memory
+                    record_memory_usages[i].append(memory)
                     sum_avg_accuracies[i] += acc
+                    record_avg_accuracies[i].append(acc)
                     sum_avg_delays[i] += delay
+                    record_avg_delays[i].append(delay)
                     sum_satisfied_workflows[i] += satisfied
+                    record_satisfied_workflows[i].append(satisfied)
             avg_times = [item / iterations for item in sum_times]
+            time_err = [calculate_err(record) for record in record_times]
             avg_objectives = [item / iterations for item in sum_objectives]
+            obj_err = [calculate_err(record) for record in record_objectives]
             avg_cpus = [item / iterations for item in sum_cpu_usages]
+            cpu_err = [calculate_err(record) for record in record_cpu_usages]
             avg_memorys = [item / iterations for item in sum_memory_usages]
+            memory_err = [calculate_err(record) for record in record_memory_usages]
             avg_avg_accs = [item / iterations for item in sum_avg_accuracies]
+            accuraccy_err = [calculate_err(record) for record in record_avg_accuracies]
             avg_avg_delays = [item / iterations for item in sum_avg_delays]
+            delay_err = [calculate_err(record) for record in record_avg_delays]
             avg_satisfied = [item / iterations for item in sum_satisfied_workflows]
+            satisfied_err = [calculate_err(record) for record in record_satisfied_workflows]
+
             for i in range(len(avg_times)):
                 time = avg_times[i]
                 obj = avg_objectives[i]
@@ -698,20 +821,34 @@ def evaluation_experiments_real():
                 delay_avg = avg_avg_delays[i]
                 satisfied = avg_satisfied[i]
                 data['Normalized objective'].append(obj)
+                data['obj_err'].append(obj_err[i])
+
                 data['time'].append(time)
+                data['time_err'].append(time_err[i])
+
                 data['CPU usage'].append(cpu)
+                data['cpu_err'].append(cpu_err[i])
+
                 data['Memory usage'].append(memory)
+                data['mem_err'].append(memory_err[i])
+
                 data['group'].append(request_num)
                 data['algorithm'].append(algorithm)
+
                 data['Average accuracy'].append(acc_avg)
+                data['acc_err'].append(accuraccy_err[i])
+
                 data['Average delay'].append(delay_avg)
+                data['delay_err'].append(delay_err[i])
+
                 data['Satisfied workflows'].append(satisfied)
+                data['satisfied_err'].append(satisfied_err[i])
     # record finishes, save into csv
     df = pd.DataFrame(data)
-    df.to_csv('results/evaluation_22_real.csv', index=False)
+    df.to_csv('results/evaluation_24_baseline_real.csv', index=False)
 
 
 if __name__ == '__main__':
     # main()
-    evaluation_experiments_real()
-
+    # evaluation_experiments_real()
+    evaluation_experiments()

@@ -10,6 +10,8 @@ from status_tracker.rescons_models import cpu_consumption
 
 cur_dir = os.getcwd()
 
+def sigmoid(x, threshold, scale=1):
+    return 1 / (1 + np.exp(-(x - threshold) * scale))
 speed_lookup_table = None
 power_lookup_table = None
 with open(os.path.join(cur_dir, "../status_tracker/speed_lookup_table.json"), 'r') as file:
@@ -29,7 +31,8 @@ For each workflow:
         until it's full; 
 """
 class Greedy_ODP:
-    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time, link_penalty_matrix=None, wa=0.05, wb=0.95):
+    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time, link_penalty_matrix=None, wa=0.05, wb=0.95, objective="normal"):
+        self.objective=objective
         self.wa = wa
         self.wb = wb
         self.workflows = workflows

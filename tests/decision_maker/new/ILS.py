@@ -13,6 +13,8 @@ cur_dir = os.getcwd()
 
 speed_lookup_table = None
 power_lookup_table = None
+def sigmoid(x, threshold, scale=1):
+    return 1 / (1 + np.exp(-(x - threshold) * scale))
 with open(os.path.join(cur_dir, "../status_tracker/speed_lookup_table.json"), 'r') as file:
     speed_lookup_table = json.load(file)
 
@@ -20,7 +22,8 @@ with open(os.path.join(cur_dir, "../status_tracker/power_lookup_table.json"), 'r
     power_lookup_table = json.load(file)
 
 class Iterated_LS_decider:
-    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time, iteration_time=20, max_no_improvement=10, wa=0.05, wb=0.95):
+    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time, iteration_time=20, max_no_improvement=10, wa=0.05, wb=0.95, objective="normal"):
+        self.objective = objective
         self.workflows = workflows
         self.microservice_data = microservice_data
         """

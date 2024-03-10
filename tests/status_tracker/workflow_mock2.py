@@ -7,7 +7,10 @@ object_dict = {
 
 workflow_templates = [
     [1],
-    [2]
+    [2],
+    [1, 2],
+    [1, 2, 1],
+    # [5, 2, 6]
 ]
 
 
@@ -37,7 +40,7 @@ def generate_workflows_2(num_workflows, device_list):
 
     for i in range(num_workflows):
         workflow = random.choice(workflow_templates)
-        delay = random.uniform(5.0, 15.0)
+        delay = random.uniform(5.0, 20.0)
         sensor_id = random.choice(sensor_list)
         rate = device_list[sensor_id]["resources"]["hardware"][0]["rate"]
         size = device_list[sensor_id]["resources"]["hardware"][0]["size"]

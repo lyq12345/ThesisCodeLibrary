@@ -8,9 +8,9 @@
     "os": "Ubuntu1804",
     "resources": {
       "system": {
-         "cpu": 800,
+         "cpu": 640,
         "gpu": 1,
-        "memory": 32768,
+        "memory": 26214,
         "storage": 65600
       },
       "hardware": []
@@ -28,9 +28,9 @@
     "os": "ubuntu1804",
     "resources": {
       "system": {
-         "cpu": 400,
+         "cpu": 320,
         "gpu": 1,
-        "memory": 4096,
+        "memory": 3276,
         "storage": 65600
       },
       "hardware": []
@@ -48,9 +48,9 @@
     "os": "Raspbian GNU/Linux 10 (buster)",
     "resources": {
       "system": {
-         "cpu": 400,
+         "cpu": 320,
         "gpu": 0,
-        "memory": 4096,
+        "memory": 1638,
         "storage": 131072
       },
       "hardware": []
@@ -68,9 +68,9 @@
     "os": "Raspbian GNU/Linux 10 (buster)",
     "resources": {
       "system": {
-         "cpu": 400,
+         "cpu": 320,
         "gpu": 0,
-        "memory": 4096,
+        "memory": 1638,
         "storage": 131072
       },
       "hardware": [
@@ -97,7 +97,7 @@
       "system": {
         "cpu": 400,
         "gpu": 0,
-        "memory": 4096,
+        "memory": 1638,
         "storage": 131072
       },
       "hardware": [

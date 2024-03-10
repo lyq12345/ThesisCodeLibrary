@@ -81,5 +81,225 @@
       },
       "hardware": null
     }
+  },
+   {
+    "id": 4,
+    "name": "joelee0515/firedetection:tinyyolov3-gpu",
+    "type": "processing",
+    "object": "fire",
+    "object_code": 30,
+    "version": "tinyyolov3-gpu",
+    "accuracy": 0.5,
+    "speed": 1,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 80,
+        "gpu": 1,
+        "storage": 0,
+        "memory": 408
+      },
+      "hardware": null
+    }
+  },
+  {
+    "id": 5,
+    "name": "joelee0515/firedetection:yolov3-gpu",
+    "type": "processing",
+    "object": "fire",
+    "object_code": 30,
+    "version": "yolov3-gpu",
+    "accuracy": 0.7,
+    "speed": 1,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 160,
+        "gpu": 1,
+        "storage": 0,
+        "memory": 674
+      },
+      "hardware": null
+    }
+  },
+   {
+    "id": 6,
+    "name": "joelee0515/humandetection:tinyyolov3-gpu",
+    "type": "processing",
+    "object": "human",
+    "object_code": 30,
+    "version": "tinyyolov3-gpu",
+    "accuracy": 0.5,
+    "speed": 1,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 80,
+        "gpu": 1,
+        "storage": 0,
+        "memory": 408
+      },
+      "hardware": null
+    }
+  },
+   {
+    "id": 7,
+    "name": "joelee0515/humandetection:yolov3-gpu",
+    "type": "processing",
+    "object": "human",
+    "object_code": 30,
+    "version": "yolov3-gpu",
+    "accuracy": 0.7,
+    "speed": 1,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 160,
+        "gpu": 1,
+        "storage": 0,
+        "memory": 674
+      },
+      "hardware": null
+    }
+  },
+  {
+    "id": 8,
+    "name": "background-substraction",
+    "type": "processing",
+    "object": "human",
+    "object_code": 4,
+    "version": "yolov3-gpu",
+    "accuracy": 1,
+    "speed": 1,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 32,
+        "gpu": 0,
+        "storage": 0,
+        "memory": 100
+      },
+      "hardware": null
+    }
+  },
+  {
+    "id": 9,
+    "name": "color-filtering",
+    "type": "processing",
+    "object": "human",
+    "object_code": 5,
+    "version": "yolov3-gpu",
+    "accuracy": 1,
+    "speed": 1,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 24,
+        "gpu": 0,
+        "storage": 0,
+        "memory": 72
+      },
+      "hardware": null
+    }
+  },
+  {
+    "id": 10,
+    "name": "fire-spread-prediction",
+    "type": "processing",
+    "object": "human",
+    "object_code": 6,
+    "version": "yolov3-gpu",
+    "accuracy": 0.6,
+    "speed": 1,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 170,
+        "gpu": 0,
+        "storage": 0,
+        "memory": 700
+      },
+      "hardware": null
+    }
+  },
+  {
+    "id": 11,
+    "name": "pose-estimation",
+    "type": "processing",
+    "object": "human",
+    "object_code": 7,
+    "version": "yolov3-gpu",
+    "accuracy": 0.7,
+    "speed": 1,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 120,
+        "gpu": 0,
+        "storage": 0,
+        "memory": 700
+      },
+      "hardware": null
+    }
+  },
+  {
+    "id": 12,
+    "name": "face-recognition",
+    "type": "processing",
+    "object": "human",
+    "object_code": 8,
+    "version": "yolov3-gpu",
+    "accuracy": 0.8,
+    "speed": 1,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 130,
+        "gpu": 0,
+        "storage": 0,
+        "memory": 750
+      },
+      "hardware": null
+    }
+  },
+  {
+    "id": 13,
+    "name": "window-detection",
+    "type": "processing",
+    "object": "human",
+    "object_code": 3,
+    "version": "yolov3-gpu",
+    "accuracy": 0.82,
+    "speed": 1,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 110,
+        "gpu": 0,
+        "storage": 0,
+        "memory": 570
+      },
+      "hardware": null
+    }
+  },
+  {
+    "id": 14,
+    "name": "window-opening-classifier",
+    "type": "processing",
+    "object": "human",
+    "object_code": 9,
+    "version": "yolov3-gpu",
+    "accuracy": 0.75,
+    "speed": 1,
+    "power_consumption": 0,
+    "requirements": {
+      "system": {
+        "cpu": 105,
+        "gpu": 0,
+        "storage": 0,
+        "memory": 580
+      },
+      "hardware": null
+    }
   }
 ]

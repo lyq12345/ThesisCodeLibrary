@@ -18,10 +18,14 @@ with open(os.path.join(cur_dir, "../status_tracker/speed_lookup_table.json"), 'r
 with open(os.path.join(cur_dir, "../status_tracker/power_lookup_table.json"), 'r') as file:
     power_lookup_table = json.load(file)
 
+def sigmoid(x, threshold, scale=1):
+    return 1 / (1 + np.exp(-(x - threshold) * scale))
+
 class ODP_TS_Decider:
-    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time, wa=0.05, wb=0.95):
+    def __init__(self, workflows, microservice_data, operator_data, devices, operators, transmission_matrix, effective_time, wa=0.05, wb=0.95, objective="normal"):
         self.wa = wa
         self.wb = wb
+        self.objective = objective
         self.workflows = workflows
         self.microservice_data = microservice_data
         """
