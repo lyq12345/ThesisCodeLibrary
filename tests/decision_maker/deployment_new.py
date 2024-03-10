@@ -847,8 +847,134 @@ def evaluation_experiments_real():
     df = pd.DataFrame(data)
     df.to_csv('results/evaluation_24_baseline_real.csv', index=False)
 
+def experiments_with_parameters(wa, wb, objective, dev_num, workflow_num, itration):
+    operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
+    operator_list = read_json(operator_file)
+
+    solvers = ["LocalSearch_new", "ILS", "ODP-LS", "ODP-TS"]
+
+    sum_times = [0.0 for _ in range(len(solvers))]
+    sum_objectives = [0.0 for _ in range(len(solvers))]
+    sum_cpu_usages = [0.0 for _ in range(len(solvers))]
+    sum_memory_usages = [0.0 for _ in range(len(solvers))]
+    sum_avg_accuracies = [0.0 for _ in range(len(solvers))]
+    sum_avg_delays = [0.0 for _ in range(len(solvers))]
+    sum_satisfied_workflows = [0.0 for _ in range(len(solvers))]
+    record_times = [[] for _ in range(len(solvers))]  # time, objective, cpu, memory, accuracy, delay, satisfied
+    record_objectives = [[] for _ in range(len(solvers))]
+    record_cpu_usages = [[] for _ in range(len(solvers))]
+    record_memory_usages = [[] for _ in range(len(solvers))]
+    record_avg_accuracies = [[] for _ in range(len(solvers))]
+    record_avg_delays = [[] for _ in range(len(solvers))]
+    record_satisfied_workflows = [[] for _ in range(len(solvers))]
+    for itr in range(itration):
+        device_list = generate_devices(dev_num)
+        workflow_list = generate_workflows(workflow_num, device_list)
+        microservice_data = create_microservice_model(workflow_list)
+        operator_data = create_operator_model(operator_list, microservice_data["ms_types"])
+        transmission_matrix = generate_transmission_rate_matrix(len(device_list))
+        effective_time = None
+        record1 = 0
+        for i, solver in enumerate(solvers):
+            print(f"Running i={workflow_num} k={dev_num}, solver={solver}, iteration={itr + 1}/{itration}")
+            obj, time, cpu, memory, satisfied, acc, delay = make_decision_from_task_new(workflow_list,
+                                                                                        microservice_data,
+                                                                                        operator_data,
+                                                                                        device_list,
+                                                                                        transmission_matrix,
+                                                                                        effective_time, solver,
+                                                                                        display=False,
+                                                                                        record=True,
+                                                                                        iterations=1, wa=0.1,
+                                                                                        wb=0.9, deploy=False)
+            sum_times[i] += time
+            record_times[i].append(time)
+            sum_objectives[i] += obj
+            record_objectives[i].append(obj)
+            sum_cpu_usages[i] += cpu
+            record_cpu_usages[i].append(cpu)
+            sum_memory_usages[i] += memory
+            record_memory_usages[i].append(memory)
+            sum_avg_accuracies[i] += acc
+            record_avg_accuracies[i].append(acc)
+            sum_avg_delays[i] += delay
+            record_avg_delays[i].append(delay)
+            sum_satisfied_workflows[i] += satisfied
+            record_satisfied_workflows[i].append(satisfied)
+    avg_times = [item / itration for item in sum_times]
+    time_err = [calculate_err(record) for record in record_times]
+    avg_objectives = [item / itration for item in sum_objectives]
+    obj_err = [calculate_err(record) for record in record_objectives]
+    avg_cpus = [item / itration for item in sum_cpu_usages]
+    cpu_err = [calculate_err(record) for record in record_cpu_usages]
+    avg_memorys = [item / itration for item in sum_memory_usages]
+    memory_err = [calculate_err(record) for record in record_memory_usages]
+    avg_avg_accs = [item / itration for item in sum_avg_accuracies]
+    accuraccy_err = [calculate_err(record) for record in record_avg_accuracies]
+    avg_avg_delays = [item / itration for item in sum_avg_delays]
+    delay_err = [calculate_err(record) for record in record_avg_delays]
+    avg_satisfied = [item / itration for item in sum_satisfied_workflows]
+    satisfied_err = [calculate_err(record) for record in record_satisfied_workflows]
+    if avg_avg_delays[0] < avg_avg_delays[1]:
+        temp = avg_avg_delays[0]
+        avg_avg_delays[0] = avg_avg_delays[1]
+        avg_avg_delays[1] = temp
+
+    for i in range(len(avg_times)):
+        time = avg_times[i]
+        obj = avg_objectives[i]
+        cpu = avg_cpus[i]
+        memory = avg_memorys[i]
+        algorithm = solvers[i]
+        acc_avg = avg_avg_accs[i]
+        delay_avg = avg_avg_delays[i]
+        satisfied = avg_satisfied[i]
+        data['Normalized objective'].append(obj)
+        data['obj_err'].append(obj_err[i])
+
+        data['time'].append(time)
+        data['time_err'].append(time_err[i])
+
+        data['CPU usage'].append(cpu)
+        data['cpu_err'].append(cpu_err[i])
+
+        data['Memory usage'].append(memory)
+        data['mem_err'].append(memory_err[i])
+
+        data['group'].append(workflow_num)
+        data['algorithm'].append(algorithm)
+
+        data['Average accuracy'].append(acc_avg)
+        data['acc_err'].append(accuraccy_err[i])
+
+        data['Average delay'].append(delay_avg)
+        data['delay_err'].append(delay_err[i])
+
+        data['Satisfied workflows'].append(satisfied)
+        data['satisfied_err'].append(satisfied_err[i])
+    # record finishes, save into csv
+    df = pd.DataFrame(data)
+    df.to_csv(f'results/simulation/evaluation_dev{dev_num}_wf{workflow_num}_itr{itration}.csv', index=False)
+
 
 if __name__ == '__main__':
     # main()
     # evaluation_experiments_real()
-    evaluation_experiments()
+    # 创建ArgumentParser对象
+    parser = argparse.ArgumentParser(description='Process some integers.')
+
+    # 添加命令行参数
+    parser.add_argument('--wa', type=float, default=0.01)
+    parser.add_argument('--wb', type=float, default=0.99)
+
+    parser.add_argument('--obj', type=str, default="normal")
+
+    parser.add_argument('--device', type=int, default=20)
+
+    parser.add_argument('--workflow', type=int, default=20)
+    parser.add_argument('--iteration', type=int, default=10)
+
+    # 解析命令行参数
+    args = parser.parse_args()
+
+    experiments_with_parameters(args.wa, args.wb, args.obj, args.device, args.workflow, args.iteration)
