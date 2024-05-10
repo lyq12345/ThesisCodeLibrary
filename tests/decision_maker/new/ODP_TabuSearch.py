@@ -6,7 +6,7 @@ import sys
 import numpy as np
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from status_tracker.rescons_models import cpu_consumption
-from tests.decision_maker.new.Greedy_ODP import Greedy_ODP
+from .Greedy_ODP import Greedy_ODP
 
 cur_dir = os.getcwd()
 
