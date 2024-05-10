@@ -616,19 +616,19 @@ def main():
 def evaluation_experiments():
     operator_file = os.path.join(cur_dir, "../status_tracker/operators.json")
     operator_list = read_json(operator_file)
-    num_devices = [30]
-    max_workflows = 30
-    num_requests = [i for i in range(1, max_workflows+1, 1)]
+    num_devices = [10, 20, 30, 40, 50]
+    num_workflows = [10]
+    # num_requests = [i for i in range(1, max_workflows+1, 1)]
     # num_requests = [30]
-    iterations = 5
+    iterations = 10
     # num_devices = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
     # num_requests = [10]
     # solvers = ["Greedy_accfirst", "Greedy_delayfirst", "Greedy_multi", "LocalSearch_new", "ILS", "ODP-LS", "ODP-TS"]
     solvers = ["LocalSearch_new", "ILS", "ODP-LS", "ODP-TS"]
     for i, device_num in enumerate(num_devices):
         # for j in range(i + 1):
-        for j in range(len(num_requests)):
-            request_num = num_requests[j]
+        for j, request_num in enumerate(num_workflows):
+            # request_num = num_workflows[j]
             sum_times = [0.0 for _ in range(len(solvers))]
             sum_objectives = [0.0 for _ in range(len(solvers))]
             sum_cpu_usages = [0.0 for _ in range(len(solvers))]
@@ -737,7 +737,7 @@ def evaluation_experiments():
                 data['satisfied_err'].append(satisfied_err[i])
     # record finishes, save into csv
     df = pd.DataFrame(data)
-    df.to_csv(f'results/evaluation_dev{device_num}_wf{max_workflows}_itr{iterations}_2.csv', index=False)
+    df.to_csv(f'results/evaluation_devmin10_devmax150_wf10.csv', index=False)
 
 def evaluation_experiments_real():
 
